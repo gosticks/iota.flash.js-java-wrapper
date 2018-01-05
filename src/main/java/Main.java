@@ -1,16 +1,4 @@
 
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Object;
-import netscape.javascript.JSObject;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Scriptable;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import java.io.*;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 
 
