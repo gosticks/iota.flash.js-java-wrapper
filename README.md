@@ -4,7 +4,8 @@ This wrapper allows the usage of [iota.flash.js](https://github.com/iotaledger/i
 If you have any ideas please submit a request (I am totally not a Java guy so...)
 
 
-### iota.flash.js coverage
+
+## iota.flash.js coverage
 
 #### Multisig
 - [x] composeAddress
@@ -20,13 +21,17 @@ If you have any ideas please submit a request (I am totally not a Java guy so...
 - [ ] getDiff 
 - [ ] sign 
 
+
+
 ### Installation
 
 1. Clone repo
 2. Update maven ressources
 3. That's it.
 
-### Updating iota.flash.js
+
+
+## Updating iota.flash.js
 I will try to update the iota.flash.js as often as I can till it is automated.
 To manually update the lib do the following:
 
@@ -51,7 +56,9 @@ To manually update the lib do the following:
 4. Add `"use strict";`to the start of the file you just coppied (If you don't the V8 will complain).
 5. That was it...
 
-### TODO
+
+
+## TODO
 
 - [ ] write documentation  
 - [ ] add some testing
