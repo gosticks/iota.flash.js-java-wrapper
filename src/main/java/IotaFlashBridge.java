@@ -12,28 +12,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class IotaFlashBridge implements IotaFlashInterface {
-    private String iotaLibPath;
-    private V8 engine;
-    private V8Object transfer;
-    private V8Object multisig;
+public class IotaFlashBridge {
+    private static String iotaLibPath = "res/iota.flash.js";
+    private static V8 engine;
+    private static V8Object transfer;
+    private static V8Object multisig;
 
-    /**
-     *
-     * @param path
-     * @throws IOException
-     */
-    IotaFlashBridge(String path) throws IOException {
-        this.iotaLibPath = path;
+    public static void boot() throws IOException {
+        String file = readFile(iotaLibPath, Charset.defaultCharset());
 
-        String file = readFile(path, Charset.defaultCharset());
-
-        this.engine = V8.createV8Runtime();
+        engine = V8.createV8Runtime();
         // Eval lib into current v8 context.
         engine.executeVoidScript(file);
         multisig = (V8Object) engine.executeScript("iotaFlash.multisig");
         transfer = (V8Object) engine.executeScript("iotaFlash.transfer");
-
     }
 
     /**
@@ -41,9 +33,8 @@ public class IotaFlashBridge implements IotaFlashInterface {
      * @param digests
      * @return
      */
-    public MultisigAddress composeAddress(ArrayList<Digest> digests) {
+    public static MultisigAddress composeAddress(ArrayList<Digest> digests) {
         // Create js object for digest
-        // TODO: find more clean way to do thi s.
         List<Object> list = new ArrayList<Object>();
         for (Digest digest: digests) {
             list.add(digest.toMap());
@@ -73,7 +64,7 @@ public class IotaFlashBridge implements IotaFlashInterface {
      * @param security
      * @return
      */
-    public Digest getDigest(String seed, int index, int security) {
+    public static Digest getDigest(String seed, int index, int security) {
         if (seed.length() < 81) {
             System.out.println("Seed is too short");
             return null;
@@ -94,14 +85,21 @@ public class IotaFlashBridge implements IotaFlashInterface {
      *
      * @param root
      */
-    public void updateLeafToRoot(MultisigAddress root) {
+    public static CreateTransactionHelperObject updateLeafToRoot(MultisigAddress root) {
         Map<String, Object> map = root.toMap();
         // Create param list
         List<Object> paramsObj = new ArrayList<Object>();
         paramsObj.add(map);
         V8Array params = V8ObjectUtils.toV8Array(engine, paramsObj);
 
-        multisig.executeFunction("updateLeafToRoot", params);
+        V8Object ret = multisig.executeObjectFunction("updateLeafToRoot", params);
+        int generate = ret.getInteger("generate");
+        Map<String, ? super Object> multiSigMap = V8ObjectUtils.toMap((V8Object) ret.getObject("multisig"));
+        // Parse result into Java Obj.
+        String addr = (String) multiSigMap.get("address");
+        int secSum = (Integer) multiSigMap.get("securitySum");
+        MultisigAddress multisig = new MultisigAddress(addr, secSum);
+        return new CreateTransactionHelperObject(generate, multisig);
     }
 
 
@@ -113,7 +111,7 @@ public class IotaFlashBridge implements IotaFlashInterface {
      * @param transfers array of all transfers (value, address) pairs
      * @return
      */
-    public Object prepare(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits, int index, ArrayList<Transfer> transfers) {
+    public static List<Object> prepare(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits, int index, ArrayList<Transfer> transfers) {
         V8Array settlementAddressesJS = V8ObjectUtils.toV8Array(engine, settlementAddresses);
         V8Array depositJS = V8ObjectUtils.toV8Array(engine, deposits);
         List<Object> transferObj = new ArrayList<Object>();
@@ -133,6 +131,11 @@ public class IotaFlashBridge implements IotaFlashInterface {
         V8Array ret = transfer.executeArrayFunction("prepare", V8ObjectUtils.toV8Array(engine, params));
         List<Object> transfersReturnJS = V8ObjectUtils.toList(ret);
 
+        for (Object b: transfersReturnJS) {
+            Map<String, Object> test = V8ObjectUtils.toMap((V8Object) b);
+
+        }
+
         // Call js.
         return transfersReturnJS;
     }
@@ -142,14 +145,14 @@ public class IotaFlashBridge implements IotaFlashInterface {
      * @param balance
      * @param deposits
      * @param outputs
-     * @param multisig
+     * @param root
      * @param remainderAddress
      * @param history
      * @param transfers
      * @param close
      * @return
      */
-    public List<Object> compose(int balance, ArrayList<Integer> deposits, ArrayList<Transfer> outputs, Object multisig, String remainderAddress, ArrayList<Bundle> history, ArrayList<Transfer> transfers, boolean close) {
+    public static List<Object> compose(int balance, ArrayList<Integer> deposits, ArrayList<Transfer> outputs, MultisigAddress root, String remainderAddress, ArrayList<Bundle> history, ArrayList<Transfer> transfers, boolean close) {
         V8Array depositsJS = V8ObjectUtils.toV8Array(engine, deposits);
         // Outputs
         List<Object> outputsObj = new ArrayList<Object>();
@@ -158,26 +161,60 @@ public class IotaFlashBridge implements IotaFlashInterface {
         }
         V8Array outputsJS = V8ObjectUtils.toV8Array(engine, outputsObj);
 
+
+
         List<Object> transfersObj = new ArrayList<Object>();
         for (Transfer t: transfers) {
             transfersObj.add(t.toMap());
         }
         V8Array transfersJS = V8ObjectUtils.toV8Array(engine, transfersObj);
 
-        List<Object> trs = V8ObjectUtils.toList(transfersJS);
+        // Create params.
+        // Now put all params into JS ready array.
+        List<Object> params = new ArrayList<Object>();
+        params.add(balance);
+        params.add(depositsJS);
+        params.add(outputsJS);
 
-        return trs;
+
+        // Call js function.
+        V8Array ret = transfer.executeArrayFunction("compose", V8ObjectUtils.toV8Array(engine, params));
+        List<Object> transfersReturnJS = V8ObjectUtils.toList(ret);
+
+        // Parse return as array of bundles
+
+
+        return transfersReturnJS;
     }
 
     /**
      *
-     * @param multisig
+     * @param root
      * @param seed
      * @param bundles
      * @return
      */
-    public Object sign(Object multisig, String seed, ArrayList<Object> bundles) {
-        return null;
+    public static Object sign(MultisigAddress root, String seed, ArrayList<Bundle> bundles) {
+        Map<String, Object> multisig = root.toMap();
+        V8Object rootJS = V8ObjectUtils.toV8Object(engine, multisig);
+
+        List<Object> bundleTmp = new ArrayList<Object>();
+        for (Bundle b: bundles) {
+            bundleTmp.add(b.toMap());
+        }
+        V8Array bundlesJS = V8ObjectUtils.toV8Array(engine, bundleTmp);
+
+        // Create params.
+        // Now put all params into JS ready array.
+        List<Object> params = new ArrayList<Object>();
+        params.add(rootJS);
+        params.add(seed);
+        params.add(bundles);
+
+        V8Object signatures = transfer.executeObjectFunction("sign", V8ObjectUtils.toV8Array(engine, params));
+
+        // TODO: add singature object.
+        return signatures;
     }
 
     /**
@@ -186,7 +223,7 @@ public class IotaFlashBridge implements IotaFlashInterface {
      * @param signatures
      * @return
      */
-    public Object appliedSignatures(ArrayList<Object> bundles, ArrayList<Object> signatures) {
+    public static Object appliedSignatures(ArrayList<Object> bundles, ArrayList<Object> signatures) {
         return null;
     }
 
@@ -198,7 +235,7 @@ public class IotaFlashBridge implements IotaFlashInterface {
      * @param bundles
      * @return
      */
-    public Object getDiff(ArrayList<Object> root, ArrayList<Object> remainder, ArrayList<Object> history, ArrayList<Object> bundles) {
+    public static Object getDiff(ArrayList<Object> root, ArrayList<Object> remainder, ArrayList<Object> history, ArrayList<Object> bundles) {
         return null;
     }
 
@@ -212,7 +249,7 @@ public class IotaFlashBridge implements IotaFlashInterface {
      * @param signedBundles
      * @return
      */
-    public Object applayTransfers(Object root, Object deposit, Object outputs, Object remainderAddress, Object transfers, Object signedBundles) {
+    public static Object applayTransfers(Object root, Object deposit, Object outputs, Object remainderAddress, Object transfers, Object signedBundles) {
         return null;
     }
 
@@ -222,7 +259,7 @@ public class IotaFlashBridge implements IotaFlashInterface {
      * @param deposits
      * @return
      */
-    public Object close(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits) {
+    public static Object close(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits) {
         V8Array saJS = V8ObjectUtils.toV8Array(engine, settlementAddresses);
         // Deposits
         V8Array depositsJS = V8ObjectUtils.toV8Array(engine, deposits);

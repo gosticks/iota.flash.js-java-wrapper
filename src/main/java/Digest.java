@@ -35,4 +35,5 @@ class Digest {
         map.put("security", getSecurity());
         return  map;
     }
+
 }
