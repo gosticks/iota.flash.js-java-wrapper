@@ -2,13 +2,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 class Transaction {
-    private String timestamp;
+    private int timestamp;
     private String address;
     private int value;
-    private int obsoleteTag;
-    private int tag;
+    private String obsoleteTag;
+    private String tag;
 
     // Signature stuff
+    private String bundle = "";
     private String signatureMessageFragment = "";
     private String trunkTransaction = "";
     private String branchTransaction = "";
@@ -20,7 +21,7 @@ class Transaction {
     private String nonce = "";
 
     // Unsigned constructor
-    public Transaction(String address, int value, int obsoleteTag, int tag, String timestamp) {
+    public Transaction(String address, int value, String obsoleteTag, String tag, int timestamp) {
         this.address = address;
         this.value = value;
         this.obsoleteTag = obsoleteTag;
@@ -30,17 +31,20 @@ class Transaction {
 
     // Signed constructor
     public Transaction(String address,
+                       String bundle,
                        int value,
-                       int obsoleteTag,
-                       int tag,
-                       String timestamp,
+                       String obsoleteTag,
+                       String tag,
+                       int timestamp,
                        String signatureMessageFragment,
                        String trunkTransaction,
                        String branchTransaction,
 
                        String attachmentTimestamp,
                        String attachmentTimestampUpperBound,
-                       String attachmentTimestampLowerBound
+                       String attachmentTimestampLowerBound,
+
+                       String nonce
     ) {
         this.address = address;
         this.value = value;
@@ -54,6 +58,8 @@ class Transaction {
         this.attachmentTimestamp = attachmentTimestamp;
         this.attachmentTimestampUpperBound = attachmentTimestampUpperBound;
         this.attachmentTimestampLowerBound = attachmentTimestampLowerBound;
+
+        this.nonce = nonce;
     }
 
     public int getValue() {
@@ -70,6 +76,22 @@ class Transaction {
         map.put("obsoleteTag", obsoleteTag);
         map.put("tag", tag);
         map.put("timestamp", timestamp);
+        map.put("signatureMessageFragment", signatureMessageFragment);
+        map.put("trunkTransaction", trunkTransaction);
+        map.put("branchTransaction", branchTransaction);
+        map.put("attachmentTimestamp", attachmentTimestamp);
+        map.put("attachmentTimestampLowerBound", attachmentTimestampLowerBound);
+        map.put("attachmentTimestampUpperBound", attachmentTimestampUpperBound);
         return map;
+    }
+
+    public String toString() {
+        Map<String, Object> mapObj = toMap();
+        String value = "{";
+        for (Map.Entry<String, Object> entry: mapObj.entrySet()) {
+            value += "'" + entry.getKey() + "':'" + entry.getValue().toString() + "', ";
+        }
+        value += "}";
+        return  value;
     }
 }

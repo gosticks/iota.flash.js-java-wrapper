@@ -78,7 +78,7 @@ class FlashObject {
     MultisigAddress remainderAddress;
     ArrayList<Integer> deposits; // Clone correctly
     ArrayList<Bundle> outputs = new ArrayList<Bundle>();
-    ArrayList<Transfer> transfers = new ArrayList<Transfer>();
+    ArrayList<Bundle> transfers = new ArrayList<Bundle>();
 
     FlashObject(int signersCount, int balance, ArrayList<Integer> deposits) {
         this.signersCount = signersCount;

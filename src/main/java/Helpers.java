@@ -1,8 +1,5 @@
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class Helpers {
     public static ArrayList<Bundle> createTransaction(UserObject user, ArrayList<Transfer> transfers, boolean shouldClose) {
@@ -13,12 +10,13 @@ public class Helpers {
             System.out.println("No more addresses in channel.");
         }
 
-        ArrayList<Transfer> newTransfers;
+        ArrayList<Transaction> newTransfers;
 
         if (shouldClose) {
+            newTransfers = new ArrayList<>();
             // newTransfers = IotaFlashBridge.close(user.getFlash().getSettlementAddresses(), user.getFlash().deposits);
         } else {
-            List<Object> test = IotaFlashBridge.prepare(
+            newTransfers = IotaFlashBridge.prepare(
                     user.getFlash().settlementAddresses,
                     user.getFlash().deposits,
                     user.getUserIndex(),
@@ -26,6 +24,24 @@ public class Helpers {
                     );
         }
 
+        ArrayList<Bundle> bundles = IotaFlashBridge.compose(
+                user.getFlash().balance,
+                user.getFlash().deposits,
+                user.getFlash().outputs,
+                toUse.getAddress(),
+                user.getFlash().remainderAddress,
+                user.getFlash().transfers,
+                newTransfers,
+                shouldClose
+        );
+
+
+        signTransaction(user, bundles);
+
         return null;
+    }
+
+    public static Object signTransaction(UserObject user, ArrayList<Bundle> bundles) {
+        return IotaFlashBridge.sign(user.getFlash().root, user.getSeed(), bundles);
     }
 }

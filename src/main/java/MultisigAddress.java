@@ -100,7 +100,7 @@ class MultisigAddress {
         for (Bundle b: bundles) {
             bundleList.add(b.getBundles());
         }
-        map.put("bundle", bundleList);
+        map.put("bundles", bundleList);
 
         return map;
     }
