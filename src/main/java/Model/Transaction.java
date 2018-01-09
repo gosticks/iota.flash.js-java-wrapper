@@ -1,14 +1,16 @@
+package Model;
+
 import java.util.HashMap;
 import java.util.Map;
 
-class Transaction {
+public class Transaction {
     private int timestamp;
     private String address;
     private int value;
     private String obsoleteTag;
     private String tag;
 
-    // Signature stuff
+    // Model.Signature stuff
     private String bundle = "";
     private String signatureMessageFragment = "";
     private String trunkTransaction = "";

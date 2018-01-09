@@ -1,7 +1,9 @@
+package Model;
+
 import java.util.HashMap;
 import java.util.Map;
 
-class Transfer {
+public class Transfer {
     private String address;
     private int value;
 

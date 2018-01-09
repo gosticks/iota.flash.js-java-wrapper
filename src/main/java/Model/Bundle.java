@@ -1,3 +1,5 @@
+package Model;
+
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Array;
 
@@ -6,11 +8,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class Bundle {
+public class Bundle {
     private ArrayList<Transaction> bundles;
 
     public Bundle(ArrayList<Transaction> bundles) {
         this.bundles = bundles;
+    }
+
+    public Bundle() {
+        this.bundles = new ArrayList<>();
     }
 
     public Map<String, Object> toMap() {

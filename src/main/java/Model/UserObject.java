@@ -1,3 +1,5 @@
+package Model;
+
 import java.util.ArrayList;
 
 public class UserObject {
@@ -11,7 +13,7 @@ public class UserObject {
     private ArrayList<MultisigAddress> multisigDigests = new ArrayList<MultisigAddress>();
     private FlashObject flash;
 
-    UserObject(int userID, String seed, int depth, FlashObject flash) {
+    public UserObject(int userID, String seed, int depth, FlashObject flash) {
         this.userIndex = userID;
         this.seed = seed;
         this.depth = depth;
@@ -27,6 +29,8 @@ public class UserObject {
     }
 
 
+
+
     /**
      *
      * Getters and Setters
@@ -34,6 +38,14 @@ public class UserObject {
 
     public void setMultisigDigests(ArrayList<MultisigAddress> multisigDigests) {
         this.multisigDigests = multisigDigests;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    public void setBundles(ArrayList<Bundle> bundles) {
+        this.bundles = bundles;
     }
 
     public ArrayList<MultisigAddress> getMultisigDigests() {
@@ -70,39 +82,3 @@ public class UserObject {
 
 }
 
-class FlashObject {
-    int signersCount = 2;
-    int balance;
-    ArrayList<String> settlementAddresses;
-    MultisigAddress root;
-    MultisigAddress remainderAddress;
-    ArrayList<Integer> deposits; // Clone correctly
-    ArrayList<Bundle> outputs = new ArrayList<Bundle>();
-    ArrayList<Bundle> transfers = new ArrayList<Bundle>();
-
-    FlashObject(int signersCount, int balance, ArrayList<Integer> deposits) {
-        this.signersCount = signersCount;
-        this.balance = balance;
-        this.deposits = deposits;
-    }
-
-    public void setRemainderAddress(MultisigAddress remainderAddress) {
-        this.remainderAddress = remainderAddress;
-    }
-
-    public MultisigAddress getRemainderAddress() {
-        return remainderAddress;
-    }
-
-    public void setRoot(MultisigAddress root) {
-        this.root = root;
-    }
-
-    public void setSettlementAddresses(ArrayList<String> settlementAddresses) {
-        this.settlementAddresses = settlementAddresses;
-    }
-
-    public ArrayList<String> getSettlementAddresses() {
-        return settlementAddresses;
-    }
-}

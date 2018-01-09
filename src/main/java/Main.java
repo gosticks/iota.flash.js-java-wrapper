@@ -1,11 +1,8 @@
 
-import com.sun.org.apache.xpath.internal.operations.Mult;
+import Model.*;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -75,7 +72,7 @@ public class Main {
 
         // Build flash trees
         for (int i = 1; i < oneMultisigs.size(); i++) {
-            System.out.println("Adding child (" + oneMultisigs.get(0).toString() + ") to root :" + oneMultisigs.get(i - 1).toString() );
+            System.out.println("Adding child (" + oneMultisigs.get(i).toString() + ") to root :" + oneMultisigs.get(i - 1).toString() );
             oneMultisigs.get(i - 1).push(oneMultisigs.get(i));
         }
 
@@ -93,13 +90,53 @@ public class Main {
         oneFlash.getFlash().setSettlementAddresses(settlementAddresses);
         twoFlash.getFlash().setSettlementAddresses(settlementAddresses);
 
+        // Set digest/key index
+        oneFlash.setIndex(oneFlash.getPartialDigests().size());
+        twoFlash.setIndex(twoFlash.getPartialDigests().size());
+
         System.out.println("Channel Setup!");
 
 
         ArrayList<Transfer> transfers = new ArrayList<>();
         transfers.add(new Transfer(twoSettlement, 200));
 
-        Helpers.createTransaction(oneFlash, transfers, false);
+        System.out.println("Creating a transaction");
+        ArrayList<Bundle> bundles = Helpers.createTransaction(oneFlash, transfers, false);
+
+        System.out.println("createTransaction completed");
+        for (Bundle b: bundles) {
+            System.out.println(b.toString());
+        }
+
+        // Sign the bundles.
+        // Get signatures for the bundles
+        ArrayList<Signature> oneSignatures = Helpers.signTransaction(oneFlash, bundles);
+
+        // Generate USER TWO'S Singatures
+        ArrayList<Signature> twoSignatures = Helpers.signTransaction(twoFlash, bundles);
+
+        // Sign bundle with your USER ONE'S signatures
+        ArrayList<Bundle> signedBundles = IotaFlashBridge.appliedSignatures(bundles, oneSignatures);
+
+        // ADD USER TWOS'S signatures to the partially signed bundles
+        signedBundles = IotaFlashBridge.appliedSignatures(signedBundles, twoSignatures);
+
+        /////////////////////////////////
+        /// APPLY SIGNED BUNDLES
+
+        // Apply transfers to User ONE
+        Helpers.applyTransfers(oneFlash, signedBundles);
+
+        // Save latest channel bundles
+        oneFlash.setBundles(signedBundles);
+
+        // Apply transfers to User TWO
+        Helpers.applyTransfers(twoFlash, signedBundles);
+        // Save latest channel bundles
+        twoFlash.setBundles(signedBundles);
+
+        System.out.println("Transaction Applied!");
+
     }
 
     private static void setupUser(UserObject user, int TREE_DEPTH) {

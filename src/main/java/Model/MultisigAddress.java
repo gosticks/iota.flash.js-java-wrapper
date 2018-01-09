@@ -1,3 +1,5 @@
+package Model;
+
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Object;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
@@ -7,25 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class CreateTransactionHelperObject {
-    private int generate = 0;
-    private MultisigAddress address;
 
-    CreateTransactionHelperObject(int gen, MultisigAddress addr) {
-        this.generate = gen;
-        this.address = addr;
-    }
-
-    public int getGenerate() {
-        return generate;
-    }
-
-    public MultisigAddress getAddress() {
-        return address;
-    }
-}
-
-class MultisigAddress {
+public class MultisigAddress {
     private String address;
     private int securitySum;
     private int index;

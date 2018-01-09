@@ -12,7 +12,7 @@ If you have any ideas please submit a request (I am totally not a Java guy so...
 - [x] updateLeafToRoot (needs testing)
 - [x] getDigest
 
-#### Transfer
+#### Model.Transfer
 - [x] prepare (needs testing)
 - [x] compose (needs testing)
 - [x] close (needs testing)

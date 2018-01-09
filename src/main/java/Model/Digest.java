@@ -1,7 +1,9 @@
+package Model;
+
 import java.util.HashMap;
 import java.util.Map;
 
-class Digest {
+public class Digest {
     private int index;
     private int security;
     private String digest;

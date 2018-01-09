@@ -1,6 +1,6 @@
+import Model.*;
 import com.eclipsesource.v8.*;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
-import com.sun.org.apache.xpath.internal.operations.Mult;
 
 
 import java.io.IOException;
@@ -111,20 +111,13 @@ public class IotaFlashBridge {
      * @return
      */
     public static ArrayList<Transaction> prepare(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits, int index, ArrayList<Transfer> transfers) {
-        V8Array settlementAddressesJS = V8ObjectUtils.toV8Array(engine, settlementAddresses);
-        V8Array depositJS = V8ObjectUtils.toV8Array(engine, deposits);
-        List<Object> transferObj = new ArrayList<Object>();
-        for (Transfer t: transfers) {
-            transferObj.add(t.toMap());
-        }
-        V8Array transferJS = V8ObjectUtils.toV8Array(engine, transferObj);
 
         // Now put all params into JS ready array.
-        List<Object> params = new ArrayList<Object>();
-        params.add(settlementAddressesJS);
-        params.add(depositJS);
+        List<Object> params = new ArrayList<>();
+        params.add(V8ObjectUtils.toV8Array(engine, settlementAddresses));
+        params.add(V8ObjectUtils.toV8Array(engine, deposits));
         params.add(index);
-        params.add(transferJS);
+        params.add(V8Converter.transferListToV8Array(engine, transfers));
 
         // Call js function.
         V8Array ret = transfer.executeArrayFunction("prepare", V8ObjectUtils.toV8Array(engine, params));
@@ -153,111 +146,37 @@ public class IotaFlashBridge {
      * @param root
      * @param remainderAddress
      * @param history
-     * @param transfers
+     * @param transactions
      * @param close
      * @return
      */
     public static ArrayList<Bundle> compose(int balance,
-                                       List<Integer> deposits,
-                                       List<Bundle> outputs,
-                                       MultisigAddress root,
-                                       MultisigAddress remainderAddress,
-                                       List<Bundle> history,
-                                       List<Transaction> transfers,
-                                       boolean close) {
-        V8Array depositsJS = V8ObjectUtils.toV8Array(engine, deposits);
-        // Outputs
-        List<Object> outputsObj = new ArrayList<Object>();
-        for (Bundle t: outputs) {
-            outputsObj.add(t.toMap());
-        }
-        V8Array outputsJS = V8ObjectUtils.toV8Array(engine, outputsObj);
-        V8Object rootJS = V8ObjectUtils.toV8Object(engine, root.toMap());
-        V8Object remainderJS = V8ObjectUtils.toV8Object(engine, remainderAddress.toMap());
-
-        List<Object> historyObj = new ArrayList<Object>();
-        for (Bundle t: history) {
-            historyObj.add(t.toMap());
-        }
-        V8Array historyJS = V8ObjectUtils.toV8Array(engine, historyObj);
+                                            List<Integer> deposits,
+                                            ArrayList<Bundle> outputs,
+                                            MultisigAddress root,
+                                            MultisigAddress remainderAddress,
+                                            ArrayList<Bundle> history,
+                                            ArrayList<Transaction> transactions,
+                                            boolean close) {
 
 
-        List<Object> transfersObj = new ArrayList<Object>();
-        for (Transaction t: transfers) {
-            transfersObj.add(t.toMap());
-        }
-        V8Array transfersJS = V8ObjectUtils.toV8Array(engine, transfersObj);
 
         // Create params.
         // Now put all params into JS ready array.
         List<Object> params = new ArrayList<Object>();
         params.add(balance);
-        params.add(depositsJS);
-        params.add(outputsJS);
-        params.add(rootJS);
-        params.add(remainderJS);
-        params.add(history);
-        params.add(transfersJS);
+        params.add(V8ObjectUtils.toV8Array(engine, deposits));
+        params.add(V8Converter.bundleListToV8Array(engine, outputs));
+        params.add(V8Converter.multisigToV8Object(engine, root));
+        params.add(V8Converter.multisigToV8Object(engine, remainderAddress));
+        params.add(V8Converter.bundleListToV8Array(engine, history));
+        params.add(V8Converter.transactionListToV8Array(engine, transactions));
 
         // Call js function.
         V8Array ret = transfer.executeArrayFunction("compose", V8ObjectUtils.toV8Array(engine, params));
         List<Object> transfersReturnJS = V8ObjectUtils.toList(ret);
 
-        // Parse return as array of bundles
-        ArrayList<Bundle> returnBundles = new ArrayList<Bundle>();
-        for (Object returnEntry: transfersReturnJS) {
-            ArrayList<Object> b = (ArrayList<Object>) returnEntry;
-
-            ArrayList<Transaction> returnedTransactions = new ArrayList<>();
-
-            for (Object parsedObjects: b) {
-                Map<String, Object> bundleData = (Map<String, Object>) parsedObjects;
-                String signatureMessageFragment = (String) bundleData.get("signatureMessageFragment");
-                String bundle = (String) bundleData.get("bundle");
-                String address = (String) bundleData.get("address");
-                String attachmentTimestampLowerBound = (String) bundleData.get("attachmentTimestampLowerBound");
-                String attachmentTimestampUpperBound = (String) bundleData.get("attachmentTimestampUpperBound");
-                String trunkTransaction = (String) bundleData.get("trunkTransaction");
-                String attachmentTimestamp = (String) bundleData.get("attachmentTimestamp");
-                Integer timestamp = (Integer) bundleData.get("timestamp");
-                String tag = (String) bundleData.get("tag");
-                String branchTransaction = (String) bundleData.get("branchTransaction");
-                String nonce = (String) bundleData.get("nonce");
-                String obsoleteTag = (String) bundleData.get("obsoleteTag");
-
-                Integer currentIndex = (Integer) bundleData.get("currentIndex");
-                Integer value = (Integer) bundleData.get("value");
-                Integer lastIndex = (Integer) bundleData.get("lastIndex");
-
-                Transaction parsedTransaction = new Transaction(
-                        address,
-                        bundle,
-                        value.intValue(),
-                        obsoleteTag,
-                        tag,
-                        timestamp,
-                        signatureMessageFragment,
-                        trunkTransaction,
-                        branchTransaction,
-
-                        attachmentTimestamp,
-                        attachmentTimestampUpperBound,
-                        attachmentTimestampLowerBound,
-                        nonce
-                );
-
-                returnedTransactions.add(parsedTransaction);
-
-                System.out.println("Created bundle transaction: " + parsedTransaction.toString());
-            }
-
-            Bundle bundle = new Bundle(returnedTransactions);
-            returnBundles.add(bundle);
-        }
-
-        System.out.println("Created bundles: " + returnBundles.size());
-
-        return returnBundles;
+        return V8Converter.bundleListFromV8Array(ret);
     }
 
     /**
@@ -267,38 +186,18 @@ public class IotaFlashBridge {
      * @param bundles
      * @return
      */
-    public static Object sign(MultisigAddress root, String seed, ArrayList<Bundle> bundles) {
-        Map<String, Object> multisig = root.toMap();
-        V8Object rootJS = V8ObjectUtils.toV8Object(engine, multisig);
-
-        List<Object> bundleTmp = new ArrayList<Object>();
-        for (Bundle b: bundles) {
-            List<Object> transactions = new ArrayList<Object>();
-            for (Transaction t: b.getBundles()) {
-                transactions.add(t.toMap());
-            }
-            bundleTmp.add(transactions);
-        }
-        V8Array bundlesJS = V8ObjectUtils.toV8Array(engine, bundleTmp);
+    public static ArrayList<Signature> sign(MultisigAddress root, String seed, ArrayList<Bundle> bundles) {
 
         // Create params.
         // Now put all params into JS ready array.
         List<Object> params = new ArrayList<>();
-        params.add(rootJS);
+        params.add(V8Converter.multisigToV8Object(engine, root));
         params.add(seed);
-        params.add(bundlesJS);
+        params.add(V8Converter.bundleListToV8Array(engine, bundles));
 
-        V8Array signatures = transfer.executeArrayFunction("sign", V8ObjectUtils.toV8Array(engine, params));
+        V8Array returnArray = transfer.executeArrayFunction("sign", V8ObjectUtils.toV8Array(engine, params));
 
-        for (Object o: V8ObjectUtils.toList(signatures)) {
-            Map<String, Object> returnValues = (Map<String, Object>) o;
-            for (Map.Entry<String, Object> entry: returnValues.entrySet()) {
-                System.out.println(entry.getKey() + " : " + entry.getValue());
-            }
-        }
-
-        // TODO: add singature object.
-        return signatures;
+        return V8Converter.v8ArrayToSignatureList(returnArray);
     }
 
     /**
@@ -307,8 +206,14 @@ public class IotaFlashBridge {
      * @param signatures
      * @return
      */
-    public static Object appliedSignatures(ArrayList<Object> bundles, ArrayList<Object> signatures) {
-        return null;
+    public static ArrayList<Bundle> appliedSignatures(ArrayList<Bundle> bundles, ArrayList<Signature> signatures) {
+        List<Object> params = new ArrayList<>();
+        params.add(V8Converter.bundleListToV8Array(engine, bundles));
+        params.add(V8Converter.signatureListToV8Array(engine, signatures));
+
+        V8Array returnArray = transfer.executeArrayFunction("appliedSignatures", V8ObjectUtils.toV8Array(engine, params));
+        // Parse returns
+        return V8Converter.bundleListFromV8Array(returnArray);
     }
 
     /**
@@ -326,15 +231,29 @@ public class IotaFlashBridge {
     /**
      *
      * @param root
-     * @param deposit
+     * @param deposits
      * @param outputs
      * @param remainderAddress
      * @param transfers
      * @param signedBundles
      * @return
      */
-    public static Object applayTransfers(Object root, Object deposit, Object outputs, Object remainderAddress, Object transfers, Object signedBundles) {
-        return null;
+    public static void applayTransfers(MultisigAddress root,
+                                         ArrayList<Integer> deposits,
+                                         ArrayList<Bundle> outputs,
+                                         MultisigAddress remainderAddress,
+                                         ArrayList<Bundle> transfers,
+                                         ArrayList<Bundle> signedBundles) {
+        // Construct Java params
+        List<Object> params = new ArrayList<>();
+        params.add(V8Converter.multisigToV8Object(engine, root));
+        params.add(V8ObjectUtils.toV8Array(engine, deposits));
+        params.add(V8Converter.bundleListToV8Array(engine, outputs));
+        params.add(V8Converter.multisigToV8Object(engine, remainderAddress));
+        params.add(V8Converter.bundleListToV8Array(engine, transfers));
+        params.add(V8Converter.bundleListToV8Array(engine, signedBundles));
+
+        transfer.executeFunction("applyTransfers", V8ObjectUtils.toV8Array(engine, params));
     }
 
     /**

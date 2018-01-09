@@ -1,3 +1,8 @@
+import Model.Bundle;
+import Model.Digest;
+import Model.MultisigAddress;
+import Model.Transfer;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +12,7 @@ public interface IotaFlashInterface {
 
     public void updateLeafToRoot(MultisigAddress root);
 
-    // Transfer
+    // Model.Transfer
     public Object prepare(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits, int index, ArrayList<Transfer> transfers);
     public List<Object> compose(int balance, ArrayList<Integer> deposits, ArrayList<Transfer> outputs, MultisigAddress root, String remainderAddress, ArrayList<Bundle> history, ArrayList<Transfer> transfers, boolean close);
 
