@@ -9,7 +9,8 @@ import java.util.List;
  * @author Adrian
  **/
 public class Signature {
-
+    private int index;
+    private String bundle;
     private String address;
     private List<String> signatureFragments;
 
@@ -55,4 +56,38 @@ public class Signature {
     public void setSignatureFragments(List<String> signatureFragments) {
         this.signatureFragments = signatureFragments;
     }
+
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+    }
+
+    public String getBundle() {
+        return bundle;
+    }
+
+    public void setBundle(String bundle) {
+        this.bundle = bundle;
+    }
+
+    @Override
+    public String toString() {
+        String out = "{ \n" +
+            " \tindex:" + index + ", " +
+                " \n\tbundle: " + bundle + ", " +
+            " \n\taddress:" + address + ",";
+
+        out += "\n\t[ \n";
+        for (String sf : signatureFragments) {
+            out += "\n\t" + sf + ",";
+        }
+        out += " ]";
+        out += "\n}";
+        return out;
+    }
 }
+

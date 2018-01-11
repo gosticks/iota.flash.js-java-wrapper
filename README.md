@@ -9,17 +9,17 @@ If you have any ideas please submit a request (I am totally not a Java guy so...
 
 #### Multisig
 - [x] composeAddress
-- [x] updateLeafToRoot (needs testing)
+- [x] updateLeafToRoot
 - [x] getDigest
 
 #### Model.Transfer
-- [x] prepare (needs testing)
-- [x] compose (needs testing)
+- [x] prepare
+- [x] compose
 - [x] close (needs testing)
-- [ ] applyTransfers
-- [ ] appliedSignatures 
-- [ ] getDiff 
-- [ ] sign 
+- [x] applyTransfers
+- [x] appliedSignatures 
+- [ ] getDiff (not used at the moment)
+- [x] sign 
 
 
 
@@ -28,6 +28,7 @@ If you have any ideas please submit a request (I am totally not a Java guy so...
 1. Clone repo
 2. Update maven ressources
 3. That's it.
+4. You can run a test transaction by running the main func in the Main Class.
 
 
 

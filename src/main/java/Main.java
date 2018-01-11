@@ -72,7 +72,7 @@ public class Main {
 
         // Build flash trees
         for (int i = 1; i < oneMultisigs.size(); i++) {
-            System.out.println("Adding child (" + oneMultisigs.get(i).toString() + ") to root :" + oneMultisigs.get(i - 1).toString() );
+            System.out.println(oneMultisigs.get(i - 1).toString() + " -> "  + oneMultisigs.get(i).toString());
             oneMultisigs.get(i - 1).push(oneMultisigs.get(i));
         }
 
@@ -100,13 +100,12 @@ public class Main {
         ArrayList<Transfer> transfers = new ArrayList<>();
         transfers.add(new Transfer(twoSettlement, 200));
 
-        System.out.println("Creating a transaction");
+        System.out.println(oneFlash);
+
+        System.out.println("Creating a transaction: 200 to " + twoSettlement);
         ArrayList<Bundle> bundles = Helpers.createTransaction(oneFlash, transfers, false);
 
-        System.out.println("createTransaction completed");
-        for (Bundle b: bundles) {
-            System.out.println(b.toString());
-        }
+        System.out.println("[SUCCESS] createTransaction completed");
 
         // Sign the bundles.
         // Get signatures for the bundles
@@ -115,11 +114,19 @@ public class Main {
         // Generate USER TWO'S Singatures
         ArrayList<Signature> twoSignatures = Helpers.signTransaction(twoFlash, bundles);
 
+        System.out.println("[SUCCESS] Created signatures for users.");
+
         // Sign bundle with your USER ONE'S signatures
         ArrayList<Bundle> signedBundles = IotaFlashBridge.appliedSignatures(bundles, oneSignatures);
 
+        System.out.println("[SUCCESS] Parial applied Signature for User one on transfer bundle");
+
+
         // ADD USER TWOS'S signatures to the partially signed bundles
         signedBundles = IotaFlashBridge.appliedSignatures(signedBundles, twoSignatures);
+
+        System.out.println("[SUCCESS] Signed bundle bu second user. Bundle ready.");
+
 
         /////////////////////////////////
         /// APPLY SIGNED BUNDLES
@@ -134,9 +141,55 @@ public class Main {
         Helpers.applyTransfers(twoFlash, signedBundles);
         // Save latest channel bundles
         twoFlash.setBundles(signedBundles);
+        System.out.println("[SUCCESS] Apply Transfer to flash channel.");
+
 
         System.out.println("Transaction Applied!");
+        System.out.println(
+                "Transactable tokens: " +
+                oneFlash.getFlash().getDeposits().stream().mapToInt(v -> v.intValue()).sum()
+        );
 
+        System.out.println("Closing channel... not yet working...");
+/*
+
+        // Supplying the CORRECT varibles to create a closing bundle
+                bundles = Helpers.createTransaction(
+                        oneFlash,
+                        oneFlash.getFlash().getSettlementAddresses(),
+                        true
+                );
+
+        /////////////////////////////////
+        /// SIGN BUNDLES
+
+        // Get signatures for the bundles
+                oneSignatures = Helpers.signTransaction(oneFlash, bundles)
+
+        // Generate USER TWO'S Singatures
+                twoSignatures = Helpers.signTransaction(twoFlash, bundles)
+
+        // Sign bundle with your USER ONE'S signatures
+                signedBundles = transfer.appliedSignatures(bundles, oneSignatures)
+
+        // ADD USER TWOS'S signatures to the partially signed bundles
+                signedBundles = transfer.appliedSignatures(signedBundles, twoSignatures)
+
+        /////////////////////////////////
+        /// APPLY SIGNED BUNDLES
+
+        // Apply transfers to User ONE
+                oneFlash = Helpers.applyTransfers(oneFlash, signedBundles)
+        // Save latest channel bundles
+                oneFlash.bundles = signedBundles
+
+        // Apply transfers to User TWO
+                twoFlash = Helpers.applyTransfers(twoFlash, signedBundles)
+        // Save latest channel bundles
+                twoFlash.bundles = signedBundles
+
+                console.log("Channel Closed")
+                console.log("Final Bundle to be attached: ")*/
     }
 
     private static void setupUser(UserObject user, int TREE_DEPTH) {

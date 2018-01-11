@@ -15,7 +15,7 @@ public class MultisigAddress {
     private int securitySum;
     private int index;
     private int signingIndex;
-    private int security;
+    private int security = 2;
     private ArrayList<MultisigAddress> children;
     private ArrayList<Bundle> bundles;
 
@@ -25,6 +25,13 @@ public class MultisigAddress {
         this.children = new  ArrayList<MultisigAddress>();
         this.bundles = new  ArrayList<Bundle>();
 
+    }
+
+    public MultisigAddress(String address, int securitySum, ArrayList<MultisigAddress> children) {
+        this.address = address;
+        this.securitySum = securitySum;
+        this.children = children;
+        this.bundles = new  ArrayList<Bundle>();
     }
 
     public void push(MultisigAddress addr) {
@@ -74,7 +81,9 @@ public class MultisigAddress {
         Map<String, Object> map = new HashMap<String, Object>();
         map.put("address", getAddress());
         map.put("securitySum", getSecuritySum());
-
+        map.put("index", getIndex());
+        map.put("signingIndex", getSigningIndex());
+        map.put("security", security);
         List<Object> childrenList = new ArrayList<Object>();
         for (MultisigAddress ma: children) {
             childrenList.add(ma.toMap());
@@ -96,6 +105,10 @@ public class MultisigAddress {
 
     @Override
     public String toString() {
-        return "{'address':'" + address + "', securitySum:" + securitySum + ", signingIndex: " + signingIndex + "}";
+        String out =  "{ \n address':'" + address + "' \n, securitySum:" + securitySum + "\n, signingIndex: " + signingIndex + " \n";
+        for (MultisigAddress addr: children) {
+            out += addr.toString();
+        }
+        return out;
     }
 }

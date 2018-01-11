@@ -6,16 +6,46 @@ public class FlashObject {
     int signersCount = 2;
     int balance;
     ArrayList<String> settlementAddresses;
-    MultisigAddress root;
-    MultisigAddress remainderAddress;
     ArrayList<Integer> deposits; // Clone correctly
     ArrayList<Bundle> outputs = new ArrayList<Bundle>();
     ArrayList<Bundle> transfers = new ArrayList<Bundle>();
+    MultisigAddress root;
+    MultisigAddress remainderAddress;
+
 
     public FlashObject(int signersCount, int balance, ArrayList<Integer> deposits) {
         this.signersCount = signersCount;
         this.balance = balance;
         this.deposits = deposits;
+    }
+
+    @Override
+    public String toString() {
+        String out = "";
+        out += "signersCount: " + signersCount + "\n";
+        out += "balance: " + balance + "\n";
+        out += "settlementAddresses: " + "\n";
+        for (String b: settlementAddresses) {
+            out += "\t" + b + "\n";
+        }
+        out += "deposits: " + "\n";
+        for (Integer b: deposits) {
+            out += "\t" + b + "\n";
+        }
+
+        out += "outputs: " + "\n";
+        for (Bundle b: outputs) {
+            out += "\t" + b.toString() + "\n";
+        }
+
+        out += "transfers: " + "\n";
+        for (Bundle b: transfers) {
+            out += "\t" + b.toString() + "\n";
+        }
+        out += "remainderAddress: " + remainderAddress.toString() + "\n";
+        out += "root: " + root.toString() + "\n";
+
+        return out;
     }
 
     public int getSignersCount() {

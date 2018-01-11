@@ -9472,7 +9472,7 @@ var is_null = function(arr) {
 }
 
 var trits_to_words = function(trits) {
-    if (trits.length != 243) {
+	if (trits.length != 243) {
         throw "Invalid trits length";
     }
 

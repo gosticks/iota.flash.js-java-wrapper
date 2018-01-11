@@ -19,6 +19,16 @@ public class Bundle {
         this.bundles = new ArrayList<>();
     }
 
+    @Override
+    public String toString() {
+        String out = "";
+        for (Transaction t: bundles) {
+            out += t.toString();
+            out += "\n";
+        }
+        return out;
+    }
+
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<String, Object>();
         List<Object> bundleList = new ArrayList<Object>();
@@ -33,6 +43,13 @@ public class Bundle {
         return bundles;
     }
 
+    public  Bundle clone() {
+        ArrayList<Transaction> clonedTransactions = new ArrayList<>();
+        for (Transaction t: bundles) {
+            clonedTransactions.add(t.clone());
+        }
+        return new Bundle(clonedTransactions);
+    }
 }
 
 

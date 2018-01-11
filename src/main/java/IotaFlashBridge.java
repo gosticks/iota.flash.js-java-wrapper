@@ -25,6 +25,14 @@ public class IotaFlashBridge {
         engine.executeVoidScript(file);
         multisig = (V8Object) engine.executeScript("iotaFlash.multisig");
         transfer = (V8Object) engine.executeScript("iotaFlash.transfer");
+
+        Model.Console console = new Model.Console();
+        V8Object v8Console = new V8Object(engine);
+        engine.add("console", v8Console);
+        v8Console.registerJavaMethod(console, "log", "log", new Class<?>[] { String.class });
+        v8Console.registerJavaMethod(console, "err", "err", new Class<?>[] { String.class });
+        v8Console.release();
+        engine.executeScript("console.log('Connected JS console to V8Engine output.');");
     }
 
     /**
@@ -93,11 +101,8 @@ public class IotaFlashBridge {
 
         V8Object ret = multisig.executeObjectFunction("updateLeafToRoot", params);
         int generate = ret.getInteger("generate");
-        Map<String, ? super Object> multiSigMap = V8ObjectUtils.toMap((V8Object) ret.getObject("multisig"));
-        // Parse result into Java Obj.
-        String addr = (String) multiSigMap.get("address");
-        int secSum = (Integer) multiSigMap.get("securitySum");
-        MultisigAddress multisig = new MultisigAddress(addr, secSum);
+        V8Object multisigObject = (V8Object) ret.getObject("multisig");
+        MultisigAddress multisig = V8Converter.multisigAddressFromV8Object(multisigObject);
         return new CreateTransactionHelperObject(generate, multisig);
     }
 
@@ -110,7 +115,7 @@ public class IotaFlashBridge {
      * @param transfers array of all transfers (value, address) pairs
      * @return
      */
-    public static ArrayList<Transaction> prepare(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits, int index, ArrayList<Transfer> transfers) {
+    public static ArrayList<Transfer> prepare(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits, int index, ArrayList<Transfer> transfers) {
 
         // Now put all params into JS ready array.
         List<Object> params = new ArrayList<>();
@@ -121,21 +126,28 @@ public class IotaFlashBridge {
 
         // Call js function.
         V8Array ret = transfer.executeArrayFunction("prepare", V8ObjectUtils.toV8Array(engine, params));
-        List<Object> transfersReturnJS = V8ObjectUtils.toList(ret);
+        return V8Converter.transferListFromV8Array(ret);
+    }
 
-        ArrayList<Transaction> returnTransfers = new ArrayList<>();
 
-        for (Object b: transfersReturnJS) {
-            Map<String, ? super Object> values = (Map<String, ? super Object>) b;
-            String obsoleteTag = (String) values.get("obsoleteTag");
-            String address = (String) values.get("address");
-            Integer value = (Integer) values.get("value");
+    /**
+     *
+     * @param settlementAddresses
+     * @param deposits
+     * @return
+     */
+    public static ArrayList<Transfer> close(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits) {
+        V8Array saJS = V8ObjectUtils.toV8Array(engine, settlementAddresses);
+        // Deposits
+        V8Array depositsJS = V8ObjectUtils.toV8Array(engine, deposits);
 
-            returnTransfers.add(new Transaction(address, value, "", "", 0));
-        }
+        // Add to prams
+        ArrayList<Object> paramsObj = new ArrayList<Object>();
 
-        // Call js.
-        return returnTransfers;
+        paramsObj.add(saJS);
+        paramsObj.add(depositsJS);
+        V8Array res = transfer.executeArrayFunction("close", V8ObjectUtils.toV8Array(engine, paramsObj));
+        return V8Converter.transferListFromV8Array(res);
     }
 
     /**
@@ -146,7 +158,7 @@ public class IotaFlashBridge {
      * @param root
      * @param remainderAddress
      * @param history
-     * @param transactions
+     * @param transfers
      * @param close
      * @return
      */
@@ -156,7 +168,7 @@ public class IotaFlashBridge {
                                             MultisigAddress root,
                                             MultisigAddress remainderAddress,
                                             ArrayList<Bundle> history,
-                                            ArrayList<Transaction> transactions,
+                                            ArrayList<Transfer> transfers,
                                             boolean close) {
 
 
@@ -170,11 +182,10 @@ public class IotaFlashBridge {
         params.add(V8Converter.multisigToV8Object(engine, root));
         params.add(V8Converter.multisigToV8Object(engine, remainderAddress));
         params.add(V8Converter.bundleListToV8Array(engine, history));
-        params.add(V8Converter.transactionListToV8Array(engine, transactions));
+        params.add(V8Converter.transferListToV8Array(engine, transfers));
 
         // Call js function.
         V8Array ret = transfer.executeArrayFunction("compose", V8ObjectUtils.toV8Array(engine, params));
-        List<Object> transfersReturnJS = V8ObjectUtils.toList(ret);
 
         return V8Converter.bundleListFromV8Array(ret);
     }
@@ -193,8 +204,9 @@ public class IotaFlashBridge {
         List<Object> params = new ArrayList<>();
         params.add(V8Converter.multisigToV8Object(engine, root));
         params.add(seed);
-        params.add(V8Converter.bundleListToV8Array(engine, bundles));
 
+        // Create bundle nested list by incoding all bundles
+        params.add(V8Converter.bundleListToV8Array(engine, bundles));
         V8Array returnArray = transfer.executeArrayFunction("sign", V8ObjectUtils.toV8Array(engine, params));
 
         return V8Converter.v8ArrayToSignatureList(returnArray);
@@ -254,26 +266,6 @@ public class IotaFlashBridge {
         params.add(V8Converter.bundleListToV8Array(engine, signedBundles));
 
         transfer.executeFunction("applyTransfers", V8ObjectUtils.toV8Array(engine, params));
-    }
-
-    /**
-     *
-     * @param settlementAddresses
-     * @param deposits
-     * @return
-     */
-    public static Object close(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits) {
-        V8Array saJS = V8ObjectUtils.toV8Array(engine, settlementAddresses);
-        // Deposits
-        V8Array depositsJS = V8ObjectUtils.toV8Array(engine, deposits);
-
-        // Add to prams
-        ArrayList<Object> paramsObj = new ArrayList<Object>();
-
-        paramsObj.add(saJS);
-        paramsObj.add(depositsJS);
-        V8Object res = transfer.executeObjectFunction("close", V8ObjectUtils.toV8Array(engine, paramsObj));
-        return res;
     }
 
     /// Utils

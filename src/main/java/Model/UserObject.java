@@ -1,5 +1,6 @@
 package Model;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 public class UserObject {
@@ -28,13 +29,38 @@ public class UserObject {
         partialDigests.add(digest);
     }
 
+    @Override
+    public String toString() {
+        String out = "";
+        out += "userIndex: " + userIndex + "\n";
+        out += "seed: " + seed + "\n";
+        out += "index: " + index + "\n";
+        out += "security: " + getSecurity() + "\n";
+        out += "depth: " + depth + "\n";
+        out += "bundles: " + "\n";
+        for (Bundle b: bundles) {
+            out += "\t" + b.toString() + "\n";
+        }
+        out += "partialDigests: " + "\n";
+        for (Digest d: partialDigests) {
+            out += "\t" + d.toString() + "\n";
+        }
+        out += "multisigDigests: " + "\n";
+        for (MultisigAddress m: multisigDigests) {
+            out += "\t" + m.toString() + "\n";
+        }
+        out += "Flash: " + "\n";
+        out += flash.toString();
 
-
+        return out;
+    }
 
     /**
      *
      * Getters and Setters
      */
+
+
 
     public void setMultisigDigests(ArrayList<MultisigAddress> multisigDigests) {
         this.multisigDigests = multisigDigests;
