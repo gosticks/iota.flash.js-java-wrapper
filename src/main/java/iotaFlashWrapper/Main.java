@@ -125,10 +125,10 @@ public class Main {
 
 
         System.out.println("Transaction Applied!");
-        System.out.println(
-                "Transactable tokens: " +
-                oneFlash.getFlash().getDeposits().stream().mapToInt(v -> v.intValue()).sum()
-        );
+//        System.out.println(
+//                "Transactable tokens: " +
+//                oneFlash.getFlash().getDeposits().stream().mapToInt(v -> v.intValue()).sum()
+//        );
 
         System.out.println("Closing channel... not yet working...");
 /*
