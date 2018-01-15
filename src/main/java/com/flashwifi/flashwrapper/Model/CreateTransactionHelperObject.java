@@ -1,4 +1,4 @@
-package Model;
+package com.flashwifi.flashwrapper.Model;
 
 public class CreateTransactionHelperObject {
     private int generate = 0;

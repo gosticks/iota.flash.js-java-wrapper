@@ -1,7 +1,9 @@
-import Model.Bundle;
-import Model.Digest;
-import Model.MultisigAddress;
-import Model.Transfer;
+package com.flashwifi.flashwrapper;
+
+import com.flashwifi.flashwrapper.Model.Bundle;
+import com.flashwifi.flashwrapper.Model.Digest;
+import com.flashwifi.flashwrapper.Model.MultisigAddress;
+import com.flashwifi.flashwrapper.Model.Transfer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +14,7 @@ public interface IotaFlashInterface {
 
     public void updateLeafToRoot(MultisigAddress root);
 
-    // Model.Transfer
+    // com.flashwifi.flashwrapper.Model.Transfer
     public Object prepare(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits, int index, ArrayList<Transfer> transfers);
     public List<Object> compose(int balance, ArrayList<Integer> deposits, ArrayList<Transfer> outputs, MultisigAddress root, String remainderAddress, ArrayList<Bundle> history, ArrayList<Transfer> transfers, boolean close);
 

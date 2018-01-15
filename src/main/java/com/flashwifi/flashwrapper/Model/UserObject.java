@@ -1,7 +1,8 @@
-package Model;
+package com.flashwifi.flashwrapper.Model;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UserObject {
     private int userIndex = 1;
@@ -55,15 +56,46 @@ public class UserObject {
         return out;
     }
 
+    public Map<String, Object> toMap() {
+        Map<String, Object> objectMap = new HashMap<>();
+        objectMap.put("userIndex", getUserIndex());
+        objectMap.put("seed", getSeed());
+        objectMap.put("index", getIndex());
+        objectMap.put("security", getSecurity());
+        objectMap.put("depth", depth);
+
+        ArrayList<Object> bundleMaps = new ArrayList<>();
+        for (Bundle b: bundles) {
+            bundleMaps.add(b.toMap());
+        }
+        objectMap.put("bundles", bundleMaps);
+
+        ArrayList<Object> partialDigestMaps = new ArrayList<>();
+        for (Bundle b: bundles) {
+            partialDigestMaps.add(b.toMap());
+        }
+        objectMap.put("partialDigests", partialDigestMaps);
+
+        ArrayList<Object> multisigDigestsMaps = new ArrayList<>();
+        for (Bundle b: bundles) {
+            partialDigestMaps.add(b.toMap());
+        }
+        objectMap.put("multisigDigests", multisigDigestsMaps);
+        objectMap.put("flash", flash.toMap());
+        return objectMap;
+    }
+
     /**
      *
      * Getters and Setters
      */
 
-
-
     public void setMultisigDigests(ArrayList<MultisigAddress> multisigDigests) {
         this.multisigDigests = multisigDigests;
+    }
+
+    public void setFlash(FlashObject flash) {
+        this.flash = flash;
     }
 
     public void setIndex(int index) {

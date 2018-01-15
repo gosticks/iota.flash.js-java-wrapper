@@ -1,4 +1,4 @@
-package Model;
+package com.flashwifi.flashwrapper.Model;
 
 import java.util.HashMap;
 import java.util.Map;

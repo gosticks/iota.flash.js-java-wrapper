@@ -1,7 +1,4 @@
-package Model;
-
-import com.eclipsesource.v8.V8;
-import com.eclipsesource.v8.V8Array;
+package com.flashwifi.flashwrapper.Model;
 
 import java.util.ArrayList;
 import java.util.HashMap;

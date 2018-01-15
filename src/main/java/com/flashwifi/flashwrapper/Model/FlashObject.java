@@ -1,6 +1,8 @@
-package Model;
+package com.flashwifi.flashwrapper.Model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class FlashObject {
     int signersCount = 2;
@@ -17,6 +19,17 @@ public class FlashObject {
         this.signersCount = signersCount;
         this.balance = balance;
         this.deposits = deposits;
+    }
+
+    public FlashObject(int signersCount, int balance, ArrayList<String> settlementAddresses, ArrayList<Integer> deposits, ArrayList<Bundle> outputs, ArrayList<Bundle> transfers, MultisigAddress root, MultisigAddress remainderAddress) {
+        this.signersCount = signersCount;
+        this.balance = balance;
+        this.settlementAddresses = settlementAddresses;
+        this.deposits = deposits;
+        this.outputs = outputs;
+        this.transfers = transfers;
+        this.root = root;
+        this.remainderAddress = remainderAddress;
     }
 
     @Override
@@ -46,6 +59,31 @@ public class FlashObject {
         out += "root: " + root.toString() + "\n";
 
         return out;
+    }
+
+    public Map<String, Object> toMap() {
+        Map<String, Object> objectMap = new HashMap<>();
+        objectMap.put("signersCount", signersCount);
+        objectMap.put("balance", getBalance());
+        objectMap.put("root", root.toMap());
+        objectMap.put("remainderAddress", remainderAddress.toMap());
+        objectMap.put("settlementAddresses", getSettlementAddresses());
+
+        ArrayList<Object> outputMap = new ArrayList<>();
+        for (Bundle b: outputs) {
+            outputMap.add(b.toMap());
+        }
+        objectMap.put("outputs", outputMap);
+
+        objectMap.put("deposits", getDeposits());
+
+        ArrayList<Object> transfersMap = new ArrayList<>();
+        for (Bundle b: transfers) {
+            outputMap.add(b.toMap());
+        }
+        objectMap.put("transfers", transfersMap);
+        return objectMap;
+
     }
 
     public int getSignersCount() {

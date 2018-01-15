@@ -1,5 +1,6 @@
+package com.flashwifi.flashwrapper;
 
-import Model.*;
+import com.flashwifi.flashwrapper.Model.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -96,38 +97,17 @@ public class Main {
 
         System.out.println("Channel Setup!");
 
-
         ArrayList<Transfer> transfers = new ArrayList<>();
-        transfers.add(new Transfer(twoSettlement, 200));
+        transfers.add(new Transfer(twoSettlement, 1));
+        transfers.add(new Transfer(twoSettlement, 400));
 
         System.out.println(oneFlash);
 
         System.out.println("Creating a transaction: 200 to " + twoSettlement);
         ArrayList<Bundle> bundles = Helpers.createTransaction(oneFlash, transfers, false);
 
-        System.out.println("[SUCCESS] createTransaction completed");
-
-        // Sign the bundles.
-        // Get signatures for the bundles
-        ArrayList<Signature> oneSignatures = Helpers.signTransaction(oneFlash, bundles);
-
-        // Generate USER TWO'S Singatures
-        ArrayList<Signature> twoSignatures = Helpers.signTransaction(twoFlash, bundles);
-
-        System.out.println("[SUCCESS] Created signatures for users.");
-
-        // Sign bundle with your USER ONE'S signatures
-        ArrayList<Bundle> signedBundles = IotaFlashBridge.appliedSignatures(bundles, oneSignatures);
-
-        System.out.println("[SUCCESS] Parial applied Signature for User one on transfer bundle");
-
-
-        // ADD USER TWOS'S signatures to the partially signed bundles
-        signedBundles = IotaFlashBridge.appliedSignatures(signedBundles, twoSignatures);
-
-        System.out.println("[SUCCESS] Signed bundle bu second user. Bundle ready.");
-
-
+        ArrayList<Bundle> partialSignedBundles = signTransfer(bundles, oneFlash);
+        ArrayList<Bundle> signedBundles = signTransfer(partialSignedBundles, twoFlash);
         /////////////////////////////////
         /// APPLY SIGNED BUNDLES
 
@@ -154,7 +134,7 @@ public class Main {
 /*
 
         // Supplying the CORRECT varibles to create a closing bundle
-                bundles = Helpers.createTransaction(
+                bundles = com.flashwifi.flashwrapper.Helpers.createTransaction(
                         oneFlash,
                         oneFlash.getFlash().getSettlementAddresses(),
                         true
@@ -164,10 +144,10 @@ public class Main {
         /// SIGN BUNDLES
 
         // Get signatures for the bundles
-                oneSignatures = Helpers.signTransaction(oneFlash, bundles)
+                oneSignatures = com.flashwifi.flashwrapper.Helpers.signTransaction(oneFlash, bundles)
 
         // Generate USER TWO'S Singatures
-                twoSignatures = Helpers.signTransaction(twoFlash, bundles)
+                twoSignatures = com.flashwifi.flashwrapper.Helpers.signTransaction(twoFlash, bundles)
 
         // Sign bundle with your USER ONE'S signatures
                 signedBundles = transfer.appliedSignatures(bundles, oneSignatures)
@@ -179,17 +159,28 @@ public class Main {
         /// APPLY SIGNED BUNDLES
 
         // Apply transfers to User ONE
-                oneFlash = Helpers.applyTransfers(oneFlash, signedBundles)
+                oneFlash = com.flashwifi.flashwrapper.Helpers.applyTransfers(oneFlash, signedBundles)
         // Save latest channel bundles
                 oneFlash.bundles = signedBundles
 
         // Apply transfers to User TWO
-                twoFlash = Helpers.applyTransfers(twoFlash, signedBundles)
+                twoFlash = com.flashwifi.flashwrapper.Helpers.applyTransfers(twoFlash, signedBundles)
         // Save latest channel bundles
                 twoFlash.bundles = signedBundles
 
                 console.log("Channel Closed")
                 console.log("Final Bundle to be attached: ")*/
+    }
+
+    private static ArrayList<Bundle> signTransfer(ArrayList<Bundle> bundles, UserObject user) {
+        System.out.println("[SUCCESS] Created signatures for users.");
+        ArrayList<Signature> oneSignatures = Helpers.signTransaction(user, bundles);
+
+        System.out.println("[SUCCESS] Parial applied Signature for User one on transfer bundle");
+        // Sign bundle with your USER ONE'S signatures
+        ArrayList<Bundle> signedBundles = IotaFlashBridge.appliedSignatures(bundles, oneSignatures);
+
+        return signedBundles;
     }
 
     private static void setupUser(UserObject user, int TREE_DEPTH) {

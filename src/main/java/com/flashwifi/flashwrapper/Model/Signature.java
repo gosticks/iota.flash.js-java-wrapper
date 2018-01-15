@@ -1,10 +1,10 @@
-package Model;
+package com.flashwifi.flashwrapper.Model;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This class represents an Model.Signature.
+ * This class represents an com.flashwifi.flashwrapper.Model.Signature.
  *
  * @author Adrian
  **/
@@ -15,7 +15,7 @@ public class Signature {
     private List<String> signatureFragments;
 
     /**
-     * Initializes a new instance of the Model.Signature class.
+     * Initializes a new instance of the com.flashwifi.flashwrapper.Model.Signature class.
      */
     public Signature() {
         this.signatureFragments = new ArrayList<>();

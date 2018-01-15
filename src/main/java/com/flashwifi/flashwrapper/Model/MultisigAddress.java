@@ -1,4 +1,4 @@
-package Model;
+package com.flashwifi.flashwrapper.Model;
 
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Object;

@@ -1,4 +1,7 @@
-import Model.*;
+package com.flashwifi.flashwrapper;
+
+import com.flashwifi.flashwrapper.Model.*;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +10,6 @@ import java.util.stream.Collectors;
 public class Helpers {
     public static ArrayList<Bundle> createTransaction(UserObject user, ArrayList<Transfer> transfers, boolean shouldClose) {
         CreateTransactionHelperObject toUse = IotaFlashBridge.updateLeafToRoot(user.getFlash().getRoot());
-
         if (toUse.getGenerate() != 0) {
             // TODO: tell the server to gen new address.
             System.out.println("No more addresses in channel.");
@@ -72,14 +74,16 @@ public class Helpers {
     }
 
     public static void applyTransfers(UserObject user, ArrayList<Bundle> bundles) {
-        IotaFlashBridge.applayTransfers(
-                user.getFlash().getRoot(),
-                user.getFlash().getDeposits(),
-                user.getFlash().getOutputs(),
-                user.getFlash().getRemainderAddress(),
-                user.getFlash().getTransfers(),
-                bundles
-        );
+        FlashObject flash = IotaFlashBridge.applyTransfersToUser(user, bundles);
+        user.setFlash(flash);
+        //        com.flashwifi.flashwrapper.IotaFlashBridge.applyTransfers(
+//                user.getFlash().getRoot(),
+//                user.getFlash().getDeposits(),
+//                user.getFlash().getOutputs(),
+//                user.getFlash().getRemainderAddress(),
+//                user.getFlash().getTransfers(),
+//                bundles
+//        );
     }
 
     public static ArrayList<Bundle> clone(ArrayList<Bundle> bundles) {

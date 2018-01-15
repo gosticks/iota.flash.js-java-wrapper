@@ -1,4 +1,6 @@
-import Model.*;
+package com.flashwifi.flashwrapper;
+
+import com.flashwifi.flashwrapper.Model.*;
 import com.eclipsesource.v8.*;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
 
@@ -13,9 +15,11 @@ import java.util.Map;
 
 public class IotaFlashBridge {
     private static String iotaLibPath = "res/iota.flash.js";
+    private static String iotaHelperLibPath = "res/iota.flash.helper.js";
     private static V8 engine;
     private static V8Object transfer;
     private static V8Object multisig;
+    private static V8Object helper;
 
     public static void boot() throws IOException {
         String file = readFile(iotaLibPath, Charset.defaultCharset());
@@ -23,10 +27,12 @@ public class IotaFlashBridge {
         engine = V8.createV8Runtime();
         // Eval lib into current v8 context.
         engine.executeVoidScript(file);
+        engine.executeVoidScript(readFile(iotaHelperLibPath, Charset.defaultCharset()));
         multisig = (V8Object) engine.executeScript("iotaFlash.multisig");
         transfer = (V8Object) engine.executeScript("iotaFlash.transfer");
+        helper = (V8Object) engine.executeScript("Helper");
 
-        Model.Console console = new Model.Console();
+        com.flashwifi.flashwrapper.Model.Console console = new com.flashwifi.flashwrapper.Model.Console();
         V8Object v8Console = new V8Object(engine);
         engine.add("console", v8Console);
         v8Console.registerJavaMethod(console, "log", "log", new Class<?>[] { String.class });
@@ -61,6 +67,8 @@ public class IotaFlashBridge {
         int secSum = (Integer) resultMap.get("securitySum");
         MultisigAddress ret = new MultisigAddress(addr, secSum);
 
+        params.release();
+        retV8.release();
         return ret;
     }
 
@@ -250,7 +258,7 @@ public class IotaFlashBridge {
      * @param signedBundles
      * @return
      */
-    public static void applayTransfers(MultisigAddress root,
+    public static void applyTransfers(MultisigAddress root,
                                          ArrayList<Integer> deposits,
                                          ArrayList<Bundle> outputs,
                                          MultisigAddress remainderAddress,
@@ -266,6 +274,20 @@ public class IotaFlashBridge {
         params.add(V8Converter.bundleListToV8Array(engine, signedBundles));
 
         transfer.executeFunction("applyTransfers", V8ObjectUtils.toV8Array(engine, params));
+    }
+
+    public static FlashObject applyTransfersToUser(UserObject user, ArrayList<Bundle> signedBundles) {
+        List<Object> params = new ArrayList<>();
+        params.add(V8Converter.flashObjectToV8Object(engine, user.getFlash()));
+        params.add(V8Converter.bundleListToV8Array(engine, signedBundles));
+        V8Array paramV8 = V8ObjectUtils.toV8Array(engine, params);
+        V8Object ret = helper.executeObjectFunction("applyTransfers", paramV8);
+        Map<String, Object> obj = V8ObjectUtils.toMap(ret);
+
+        paramV8.release();
+        FlashObject flash = V8Converter.flashObjectFromV8Object(ret);
+        ret.release();
+        return flash;
     }
 
     /// Utils

@@ -10297,6 +10297,7 @@ function close(settlement, deposits) {
  * @param {array} transfers
  */
 function applyTransfers(root, deposit, outputs, remainder, history, transfers) {
+
   if (transfers.filter(transfer => 
       transfer.filter(tx => tx.value < 0)
       .filter(tx => !IOTACrypto.utils.validateSignatures(transfer, tx.address))

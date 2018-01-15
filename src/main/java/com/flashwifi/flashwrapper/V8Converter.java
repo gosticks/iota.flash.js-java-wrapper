@@ -1,13 +1,11 @@
-import Model.*;
+package com.flashwifi.flashwrapper;
+
+import com.flashwifi.flashwrapper.Model.*;
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Array;
 import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.V8ResultUndefined;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
-import com.sun.org.apache.xpath.internal.operations.Mult;
-import sun.rmi.server.InactiveGroupException;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +40,25 @@ public class V8Converter {
         return V8ObjectUtils.toV8Object(engine, sigMapg);
     }
 
+    public static V8Object flashObjectToV8Object(V8 engine, FlashObject flash) {
+        return V8ObjectUtils.toV8Object(engine, flash.toMap());
+    }
+
+    public static FlashObject flashObjectFromV8Object(V8Object input) {
+        Map<String, Object> inputMap = V8ObjectUtils.toMap(input);
+
+        Integer singersCount = (Integer) inputMap.get("signersCount");
+        Integer balance = (Integer) inputMap.get("balance");
+        ArrayList<String> settlementAddresses = (ArrayList<String>) inputMap.get("settlementAddresses");
+        MultisigAddress root = multisigAddressFromPropertyMap((Map<String, Object>) inputMap.get("root"));
+        MultisigAddress remainderAddress = multisigAddressFromPropertyMap((Map<String, Object>) inputMap.get("remainderAddress"));
+        ArrayList<Integer> deposits = (ArrayList<Integer>) inputMap.get("deposits");
+        ArrayList<Bundle> transfers = bundleListFromArrayList((ArrayList<Object>) inputMap.get("transfers"));
+        ArrayList<Bundle> outputs = bundleListFromArrayList((ArrayList<Object>) inputMap.get("outputs"));
+
+        return new FlashObject(singersCount, balance, settlementAddresses, deposits, outputs, transfers, root, remainderAddress);
+    }
+
     public static V8Array bundleListToV8Array(V8 engine, ArrayList<Bundle> bundles) {
 
         List<Object> bundleTmp = new ArrayList<Object>();
@@ -53,6 +70,25 @@ public class V8Converter {
             bundleTmp.add(transactions);
         }
         return V8ObjectUtils.toV8Array(engine, bundleTmp);
+    }
+
+    public static Bundle bundleFromArrayList(ArrayList<Object> bundleObject) {
+        ArrayList<Transaction> tr = new ArrayList<>();
+        for (Object transaction: bundleObject) {
+            tr.add(transactionFromObject(transaction));
+        }
+        return new Bundle(tr);
+    }
+
+    public static ArrayList<Bundle> bundleListFromArrayList(ArrayList<Object> input) {
+        ArrayList<Bundle> ret = new ArrayList<>();
+
+        for (Object o: input) {
+            ret.add(bundleFromArrayList((ArrayList<Object>) o));
+        }
+
+
+        return ret;
     }
 
     public static MultisigAddress multisigAddressFromV8Object(V8Object input) {
@@ -129,31 +165,35 @@ public class V8Converter {
         return transfers;
     }
 
+    public static Transfer transferFromMap(Map<String, Object> values) {
+        String obsoleteTag = (String) values.get("obsoleteTag");
+        String address = (String) values.get("address");
+        Long value = parseLongFromObject(values.get("value"));
+        if (values.get("timestamp") instanceof String) {
+            String timestamp = (String) values.get("timestamp");
+            String hash = (String) values.get("hash");
+            Boolean persistance = (Boolean) values.get("persistance");
+            String message = (String) values.get("message");
+            String tag = (String) values.get("tag");
+            return new Transfer(
+                    timestamp,
+                    address,
+                    hash,
+                    persistance,
+                    value,
+                    message,
+                    tag
+            );
+        } else {
+            System.out.println("[WARN] Could not find key for full transfer creating slim transfer object");
+            return new Transfer(address, value);
+        }
+    }
+
     public static Transfer transferFromObject(Object input) {
         if (input instanceof Map) {
             Map<String, ? super Object> values = (Map<String, ? super Object>) input;
-            String obsoleteTag = (String) values.get("obsoleteTag");
-            String address = (String) values.get("address");
-            Long value = parseLongFromObject(values.get("value"));
-            if (values.get("timestamp") instanceof String) {
-                String timestamp = (String) values.get("timestamp");
-                String hash = (String) values.get("hash");
-                Boolean persistance = (Boolean) values.get("persistance");
-                String message = (String) values.get("message");
-                String tag = (String) values.get("tag");
-                return new Transfer(
-                        timestamp,
-                        address,
-                        hash,
-                        persistance,
-                        value,
-                        message,
-                        tag
-                );
-            } else {
-                System.out.println("[WARN] Could not find key for full transfer creating slim transfer object");
-                return new Transfer(address, value);
-            }
+            return transferFromMap(values);
         }
         return null;
     }
