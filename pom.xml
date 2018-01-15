@@ -22,11 +22,11 @@
             <version>4.6.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.github.iotaledger</groupId>
-            <artifactId>iota~lib~java</artifactId>
-            <version>0.9.10</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>com.github.iotaledger</groupId>-->
+            <!--<artifactId>iota~lib~java</artifactId>-->
+            <!--<version>0.9.10</version>-->
+        <!--</dependency>-->
 
         <!--  Gson: Java to Json conversion -->
         <dependency>
