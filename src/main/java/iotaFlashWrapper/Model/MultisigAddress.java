@@ -1,4 +1,4 @@
-package com.flashwifi.flashwrapper.Model;
+package iotaFlashWrapper.Model;
 
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Object;

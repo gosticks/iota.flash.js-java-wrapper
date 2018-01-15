@@ -1,8 +1,7 @@
-package com.flashwifi.flashwrapper;
-
-import com.flashwifi.flashwrapper.Model.*;
+package iotaFlashWrapper;
 import com.eclipsesource.v8.*;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
+import iotaFlashWrapper.Model.*;
 
 
 import java.io.IOException;
@@ -32,7 +31,7 @@ public class IotaFlashBridge {
         transfer = (V8Object) engine.executeScript("iotaFlash.transfer");
         helper = (V8Object) engine.executeScript("Helper");
 
-        com.flashwifi.flashwrapper.Model.Console console = new com.flashwifi.flashwrapper.Model.Console();
+        Console console = new Console();
         V8Object v8Console = new V8Object(engine);
         engine.add("console", v8Console);
         v8Console.registerJavaMethod(console, "log", "log", new Class<?>[] { String.class });

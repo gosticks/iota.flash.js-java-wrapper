@@ -1,6 +1,6 @@
-package com.flashwifi.flashwrapper;
+package iotaFlashWrapper;
 
-import com.flashwifi.flashwrapper.Model.*;
+import iotaFlashWrapper.Model.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -134,7 +134,7 @@ public class Main {
 /*
 
         // Supplying the CORRECT varibles to create a closing bundle
-                bundles = com.flashwifi.flashwrapper.Helpers.createTransaction(
+                bundles = Helpers.createTransaction(
                         oneFlash,
                         oneFlash.getFlash().getSettlementAddresses(),
                         true
@@ -144,10 +144,10 @@ public class Main {
         /// SIGN BUNDLES
 
         // Get signatures for the bundles
-                oneSignatures = com.flashwifi.flashwrapper.Helpers.signTransaction(oneFlash, bundles)
+                oneSignatures = Helpers.signTransaction(oneFlash, bundles)
 
         // Generate USER TWO'S Singatures
-                twoSignatures = com.flashwifi.flashwrapper.Helpers.signTransaction(twoFlash, bundles)
+                twoSignatures = Helpers.signTransaction(twoFlash, bundles)
 
         // Sign bundle with your USER ONE'S signatures
                 signedBundles = transfer.appliedSignatures(bundles, oneSignatures)
@@ -159,12 +159,12 @@ public class Main {
         /// APPLY SIGNED BUNDLES
 
         // Apply transfers to User ONE
-                oneFlash = com.flashwifi.flashwrapper.Helpers.applyTransfers(oneFlash, signedBundles)
+                oneFlash = Helpers.applyTransfers(oneFlash, signedBundles)
         // Save latest channel bundles
                 oneFlash.bundles = signedBundles
 
         // Apply transfers to User TWO
-                twoFlash = com.flashwifi.flashwrapper.Helpers.applyTransfers(twoFlash, signedBundles)
+                twoFlash = Helpers.applyTransfers(twoFlash, signedBundles)
         // Save latest channel bundles
                 twoFlash.bundles = signedBundles
 

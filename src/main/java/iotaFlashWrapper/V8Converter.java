@@ -1,10 +1,10 @@
-package com.flashwifi.flashwrapper;
+package iotaFlashWrapper;
 
-import com.flashwifi.flashwrapper.Model.*;
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Array;
 import com.eclipsesource.v8.V8Object;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
+import iotaFlashWrapper.Model.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package com.flashwifi.flashwrapper.Model;
+package iotaFlashWrapper.Model;
 
 
 public class Console {

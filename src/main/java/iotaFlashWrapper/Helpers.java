@@ -1,6 +1,6 @@
-package com.flashwifi.flashwrapper;
+package iotaFlashWrapper;
 
-import com.flashwifi.flashwrapper.Model.*;
+import iotaFlashWrapper.Model.*;
 
 
 import java.util.ArrayList;
@@ -76,7 +76,7 @@ public class Helpers {
     public static void applyTransfers(UserObject user, ArrayList<Bundle> bundles) {
         FlashObject flash = IotaFlashBridge.applyTransfersToUser(user, bundles);
         user.setFlash(flash);
-        //        com.flashwifi.flashwrapper.IotaFlashBridge.applyTransfers(
+        //        IotaFlashBridge.applyTransfers(
 //                user.getFlash().getRoot(),
 //                user.getFlash().getDeposits(),
 //                user.getFlash().getOutputs(),

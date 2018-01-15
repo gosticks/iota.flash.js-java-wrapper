@@ -12,7 +12,7 @@ If you have any ideas please submit a request (I am totally not a Java guy so...
 - [x] updateLeafToRoot
 - [x] getDigest
 
-#### com.flashwifi.flashwrapper.Model.Transfer
+#### Transfer
 - [x] prepare
 - [x] compose
 - [x] close (needs testing)
@@ -28,7 +28,7 @@ If you have any ideas please submit a request (I am totally not a Java guy so...
 1. Clone repo
 2. Update maven ressources
 3. That's it.
-4. You can run a test transaction by running the main func in the com.flashwifi.flashwrapper.Main Class.
+4. You can run a test transaction by running the main func in the Main Class.
 
 
 
