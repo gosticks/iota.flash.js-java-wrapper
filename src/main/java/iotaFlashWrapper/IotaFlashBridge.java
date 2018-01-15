@@ -4,7 +4,10 @@ import com.eclipsesource.v8.utils.V8ObjectUtils;
 import iotaFlashWrapper.Model.*;
 
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -12,9 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static java.nio.file.Files.readAllBytes;
+
 public class IotaFlashBridge {
-    private static String iotaLibPath = "res/iota.flash.js";
-    private static String iotaHelperLibPath = "res/iota.flash.helper.js";
+    private static String iotaLibPath = "iota.flash.js";
+    private static String iotaHelperLibPath = "iota.flash.helper.js";
     private static V8 engine;
     private static V8Object transfer;
     private static V8Object multisig;
@@ -301,13 +306,13 @@ public class IotaFlashBridge {
     static String readFile(String path, Charset encoding)
             throws IOException
     {
-        byte[] encoded;
-        try {
-            encoded = Files.readAllBytes(Paths.get(path));
-        } catch (IOException error) {
-            System.out.println("Failed to load file: " + error.getLocalizedMessage());
-            return "";
-        }
-        return new String(encoded, encoding);
+        URL url = IotaFlashBridge.class.getClassLoader().getResource(path);
+        File file = new File(url.getPath());
+        FileInputStream fis = new FileInputStream(file);
+        byte[] data = new byte[(int) file.length()];
+        fis.read(data);
+        fis.close();
+
+        return new String(data, "UTF-8");
     }
 }
