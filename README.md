@@ -1,4 +1,6 @@
+
 # IOTA Flash Channel Java Wrapper
+[![](https://jitpack.io/v/gosticks/iota.flash.js-java-wrapper.svg)](https://jitpack.io/#gosticks/iota.flash.js-java-wrapper)
 
 This wrapper allows the usage of [iota.flash.js](https://github.com/iotaledger/iota.flash.js) lib directly in Java. This is achieved by running the iota.flash.js script and all dependencies (modified build of iota.flash.js) in the V8 engine (using [J2V8](https://github.com/eclipsesource/J2V8) bindings for V8). 
 If you have any ideas please submit a request (I am totally not a Java guy so...)
