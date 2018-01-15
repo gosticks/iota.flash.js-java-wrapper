@@ -9,8 +9,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +25,6 @@ public class IotaFlashBridge {
 
     public static void boot() throws IOException {
         String file = readFile(iotaLibPath, Charset.defaultCharset());
-
         engine = V8.createV8Runtime();
         // Eval lib into current v8 context.
         engine.executeVoidScript(file);
@@ -306,8 +303,7 @@ public class IotaFlashBridge {
     static String readFile(String path, Charset encoding)
             throws IOException
     {
-        URL url = IotaFlashBridge.class.getClassLoader().getResource(path);
-        File file = new File(url.getPath());
+        File file = new File(IotaFlashBridge.class.getClassLoader().getResource(path).getFile());
         FileInputStream fis = new FileInputStream(file);
         byte[] data = new byte[(int) file.length()];
         fis.read(data);
