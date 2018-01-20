@@ -3473,6 +3473,10 @@ var validateSignatures = function(expectedAddress, signatureFragments, bundleHas
 
     var address = Converter.trytes(self.address(digests));
 
+	console.log("EXPEXTED SIGNATURE:" + expectedAddress);
+
+    console.log("GOT SIGNATURE:" + address);
+
     return (expectedAddress === address);
 }
 
@@ -10224,6 +10228,7 @@ function compose(balance, deposit, outputs, root, remainder, history, transfers,
   const bundles = [];
   let multisigs = close ? getMinimumBranch(root) : getLastBranch(root);
   if(multisigs[0].bundles.length == MAX_USES) {
+  	console.log("Overused Address: " + JSON.stringify(multisig[0]))
     throw new Error(TransferErrors.ADDRESS_OVERUSE);
   }
   for(let i = 0; i < multisigs.length - 1; i++) {
@@ -10234,6 +10239,7 @@ function compose(balance, deposit, outputs, root, remainder, history, transfers,
     }
   }
   if(multisigs.length == 0) {
+      console.log("Overused Address: " + JSON.stringify(multisigs))
     throw new Error(TransferErrors.ADDRESS_OVERUSE);
   }
   multisigs.slice(0,multisigs.length-1).map((multisig, i) => {  
@@ -10297,18 +10303,39 @@ function close(settlement, deposits) {
  * @param {array} transfers
  */
 function applyTransfers(root, deposit, outputs, remainder, history, transfers) {
+	console.log("Transfers:" )
+	console.log(JSON.stringify(transfers))
 
-  if (transfers.filter(transfer => 
-      transfer.filter(tx => tx.value < 0)
-      .filter(tx => !IOTACrypto.utils.validateSignatures(transfer, tx.address))
-      .length != 0).length != 0) {
-    throw new Error(TransferErrors.INVALID_SIGNATURES);
-  }
+	for (let bundle of transfers) {
+		for (let transfer of bundle) {
+			if (transfer.value < 0 ) {
+                var isValid = IOTACrypto.utils.validateSignatures(bundle, transfer.address)
+                console.log("ISVALID:" + transfer.address + "->" + isValid)
+                if (!isValid) {
+                	console.log("INVALID_SIGNATURE: ");
+                	console.log(JSON.stringify(transfer));
+					throw new Error(TransferErrors.INVALID_SIGNATURES);
+				}
+			}
+		}
+	}
+  // if (transfers.filter(transfer =>
+  //     transfer.filter(tx => tx.value < 0)
+  //     .filter(tx => !IOTACrypto.utils.validateSignatures(transfer, tx.address))
+  //     .length != 0).length != 0) {
+  //   throw new Error(TransferErrors.INVALID_SIGNATURES);
+  // }
+
   let multisigs = getMultisigs(root, transfers);
-  if(multisigs.filter(node => node.bundles.length == 3).length != 0) {
-    throw new Error(TransferErrors.ADDRESS_OVERUSE);
+
+  for (var sig in multisigs) {
+	if (sig.bundles && sig.bundles.length == 3) {
+        console.log("Overused Address while applyTransfers: " + JSON.stringify(sig))
+        throw new Error(TransferErrors.ADDRESS_OVERUSE);
+	}
   }
   if(multisigs.length != transfers.length ) {
+      console.log("Overused Address: " + JSON.stringify(multisig[0]))
     throw new Error(TransferErrors.ADDRESS_NOT_FOUND);
   }
   try {
@@ -10354,6 +10381,7 @@ function getMultisigs(root, transfers) {
   while (node.children.length != 0 && ++i < transfers.length) {
     node = node.children.find(m => m.address == transfers[i].find(tx => tx.value < 0).address);
     if(node.bundles.length == MAX_USES) {
+        console.log("Overused Address: " + JSON.stringify(node))
       throw new Error(TransferErrors.ADDRESS_OVERUSE);
     }
     if(!node) {
