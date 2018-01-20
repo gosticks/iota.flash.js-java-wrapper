@@ -8,20 +8,20 @@ public class FlashObject {
     int signersCount = 2;
     int balance;
     ArrayList<String> settlementAddresses;
-    ArrayList<Integer> deposits; // Clone correctly
+    ArrayList<Double> deposits;
     ArrayList<Bundle> outputs = new ArrayList<Bundle>();
     ArrayList<Bundle> transfers = new ArrayList<Bundle>();
     MultisigAddress root;
     MultisigAddress remainderAddress;
 
 
-    public FlashObject(int signersCount, int balance, ArrayList<Integer> deposits) {
+    public FlashObject(int signersCount, int balance, ArrayList<Double> deposits) {
         this.signersCount = signersCount;
         this.balance = balance;
         this.deposits = deposits;
     }
 
-    public FlashObject(int signersCount, int balance, ArrayList<String> settlementAddresses, ArrayList<Integer> deposits, ArrayList<Bundle> outputs, ArrayList<Bundle> transfers, MultisigAddress root, MultisigAddress remainderAddress) {
+    public FlashObject(int signersCount, int balance, ArrayList<String> settlementAddresses, ArrayList<Double> deposits, ArrayList<Bundle> outputs, ArrayList<Bundle> transfers, MultisigAddress root, MultisigAddress remainderAddress) {
         this.signersCount = signersCount;
         this.balance = balance;
         this.settlementAddresses = settlementAddresses;
@@ -42,7 +42,7 @@ public class FlashObject {
             out += "\t" + b + "\n";
         }
         out += "deposits: " + "\n";
-        for (Integer b: deposits) {
+        for (double b: deposits) {
             out += "\t" + b + "\n";
         }
 
@@ -98,7 +98,7 @@ public class FlashObject {
         return root;
     }
 
-    public ArrayList<Integer> getDeposits() {
+    public ArrayList<Double> getDeposits() {
         return deposits;
     }
 

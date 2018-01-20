@@ -3,6 +3,7 @@ package iotaFlashWrapper.Model;
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Object;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
+import com.sun.org.apache.xpath.internal.operations.Mult;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +25,6 @@ public class MultisigAddress {
         this.securitySum = securitySum;
         this.children = new  ArrayList<MultisigAddress>();
         this.bundles = new  ArrayList<Bundle>();
-
     }
 
     public MultisigAddress(String address, int securitySum, ArrayList<MultisigAddress> children) {
@@ -32,6 +32,42 @@ public class MultisigAddress {
         this.securitySum = securitySum;
         this.children = children;
         this.bundles = new  ArrayList<Bundle>();
+    }
+
+    public MultisigAddress find(String address) {
+        if (getAddress().equals(address)) {
+            return this;
+        } else {
+          for (MultisigAddress mult: getChildren()) {
+              MultisigAddress result = mult.find(address);
+              if (result != null) {
+                  return result;
+              }
+          }
+        }
+        return null;
+    }
+
+    public MultisigAddress clone() {
+        MultisigAddress output = new MultisigAddress(this.getAddress(), this.getSecuritySum());
+
+        output.setSecurity(this.getSecurity());
+        output.setIndex(this.getIndex());
+        output.setSigningIndex(this.getSigningIndex());
+        // Copy all bundles
+        ArrayList<Bundle> bundleCopy = new ArrayList<>();
+        for (Bundle b : this.getBundles()) {
+            bundleCopy.add(b.clone());
+        }
+        output.setBundles(bundleCopy);
+
+        // Copy all children
+        ArrayList<MultisigAddress> childrenCopy = new ArrayList<>();
+        for (MultisigAddress child : this.getChildren()) {
+            childrenCopy.add(child.clone());
+        }
+        output.setChildren(childrenCopy);
+        return output;
     }
 
     public void push(MultisigAddress addr) {
@@ -51,6 +87,22 @@ public class MultisigAddress {
     }
     public int getIndex() {
         return index;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public void setChildren(ArrayList<MultisigAddress> children) {
+        this.children = children;
+    }
+
+    public ArrayList<Bundle> getBundles() {
+        return bundles;
+    }
+
+    public void setBundles(ArrayList<Bundle> bundles) {
+        this.bundles = bundles;
     }
 
     public int getSigningIndex() {
@@ -92,7 +144,7 @@ public class MultisigAddress {
 
         List<Object> bundleList = new ArrayList<Object>();
         for (Bundle b: bundles) {
-            bundleList.add(b.getBundles());
+            bundleList.add(b.toArrayList());
         }
         map.put("bundles", bundleList);
 

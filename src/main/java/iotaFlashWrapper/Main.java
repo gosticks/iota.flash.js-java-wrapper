@@ -1,5 +1,6 @@
 package iotaFlashWrapper;
 
+import com.sun.org.apache.xpath.internal.operations.Mult;
 import iotaFlashWrapper.Model.*;
 
 import java.io.IOException;
@@ -25,7 +26,7 @@ public class Main {
         // INITIAL CHANNEL CONDITIONS
 
         // Security level
-        int SECURITY = 2;
+        int SECURITY = 1;
         // Number of parties taking signing part in the channel
         int SIGNERS_COUNT = 2;
         // Flash tree depth
@@ -33,252 +34,189 @@ public class Main {
         // Total channel Balance
         int CHANNEL_BALANCE = 2000;
         // Users deposits
-        ArrayList<Integer> DEPOSITS = new ArrayList<>();
-        DEPOSITS.add(1000);
-        DEPOSITS.add(1000);
+        ArrayList<Double> DEPOSITS = new ArrayList<>();
+        DEPOSITS.add(1000.0);
+        DEPOSITS.add(1000.0);
         // Setup users.
         FlashObject oneFlashObj = new FlashObject(SIGNERS_COUNT, CHANNEL_BALANCE, DEPOSITS);
-        UserObject oneFlash = new UserObject(0, oneSeed, TREE_DEPTH, oneFlashObj);
+        UserObject oneFlash = new UserObject(0, oneSeed, TREE_DEPTH, SECURITY, oneFlashObj);
 
         FlashObject twoFlashObj = new FlashObject(SIGNERS_COUNT, CHANNEL_BALANCE, DEPOSITS);
-        UserObject twoFlash = new UserObject(1, twoSeed, TREE_DEPTH, twoFlashObj);
+        UserObject twoFlash = new UserObject(1, twoSeed, TREE_DEPTH, SECURITY, twoFlashObj);
 
         // USER ONE
-        setupUser(oneFlash, TREE_DEPTH);
+        ArrayList<Digest> oneDigests = Helpers.getDigestsForUser(oneFlash, TREE_DEPTH);
 
         // USER TWO
-        setupUser(twoFlash, TREE_DEPTH);
+        ArrayList<Digest> twoDigests = Helpers.getDigestsForUser(twoFlash, TREE_DEPTH);
 
         //////////////////////////////////
         // INITAL MULTISIG
 
         // Make an array of digests
-        ArrayList<UserObject> allUsers = new ArrayList<UserObject>();
-        allUsers.add(oneFlash);
-        allUsers.add(twoFlash);
+        ArrayList<ArrayList<Digest>> allUserDigests = new ArrayList<>();
+        allUserDigests.add(oneDigests);
+        allUserDigests.add(twoDigests);
 
-        // Create partial digests for users.
-        createInitialPartialDigests(allUsers, oneFlash);
-        createInitialPartialDigests(allUsers, twoFlash);
 
-        ArrayList<MultisigAddress> oneMultisigs = oneFlash.getMultisigDigests();
-        ArrayList<MultisigAddress> twoMultisigs = twoFlash.getMultisigDigests();
+
+        /***************************************
+            User one setup.
+         ***************************************/
+
+        // Create multisigs.
+        ArrayList<MultisigAddress> oneMultisigs = Helpers.getMultisigsForUser(allUserDigests, oneFlash);
 
         // Set renainder address.
         MultisigAddress oneRemainderAddr = oneMultisigs.remove(0); //shiftCopyArray();
         oneFlash.getFlash().setRemainderAddress(oneRemainderAddr);
-
-        MultisigAddress twoRemainderAddr = twoMultisigs.remove(0);
-        twoFlash.getFlash().setRemainderAddress(twoRemainderAddr);
 
         // Build flash trees
         for (int i = 1; i < oneMultisigs.size(); i++) {
             System.out.println(oneMultisigs.get(i - 1).toString() + " -> "  + oneMultisigs.get(i).toString());
             oneMultisigs.get(i - 1).push(oneMultisigs.get(i));
         }
+        oneFlash.getFlash().setRoot(oneMultisigs.remove(0));
+
+
+
+        /***************************************
+         User one setup.
+         ***************************************/
+
+        ArrayList<MultisigAddress> twoMultisigs = Helpers.getMultisigsForUser(allUserDigests, twoFlash);
+        // Set user two remainder addr.
+        MultisigAddress twoRemainderAddr = twoMultisigs.remove(0);
+        twoFlash.getFlash().setRemainderAddress(twoRemainderAddr);
 
         // Build flash trees
         for (int i = 1; i < twoMultisigs.size(); i++) {
             twoMultisigs.get(i - 1).push(twoMultisigs.get(i));
         }
-
-        oneFlash.getFlash().setRoot(oneMultisigs.remove(0));
         twoFlash.getFlash().setRoot(twoMultisigs.remove(0));
+
+
+
+        /***************************************
+         Setup tettlements.
+         ***************************************/
 
         ArrayList<String> settlementAddresses = new ArrayList<>();
         settlementAddresses.add(oneSettlement);
         settlementAddresses.add(twoSettlement);
+
+
+
+        /***************************************
+         Setup tettlements.
+         ***************************************/
+
         oneFlash.getFlash().setSettlementAddresses(settlementAddresses);
         twoFlash.getFlash().setSettlementAddresses(settlementAddresses);
 
         // Set digest/key index
-        oneFlash.setIndex(oneFlash.getPartialDigests().size());
-        twoFlash.setIndex(twoFlash.getPartialDigests().size());
+        oneFlash.setIndex(oneDigests.size());
+        twoFlash.setIndex(twoDigests.size());
 
-        System.out.println("Channel Setup!");
+        System.out.println("Channel Setup completed!");
 
-        ArrayList<Transfer> transfers = new ArrayList<>();
-        transfers.add(new Transfer(twoSettlement, 1));
-        transfers.add(new Transfer(twoSettlement, 400));
-
-        System.out.println(oneFlash);
-
-        System.out.println("Creating a transaction: 200 to " + twoSettlement);
-        ArrayList<Bundle> bundles = Helpers.createTransaction(oneFlash, transfers, false);
-
-        ArrayList<Bundle> partialSignedBundles = signTransfer(bundles, oneFlash);
-        ArrayList<Bundle> signedBundles = signTransfer(partialSignedBundles, twoFlash);
-        /////////////////////////////////
-        /// APPLY SIGNED BUNDLES
-
-        // Apply transfers to User ONE
-        Helpers.applyTransfers(oneFlash, signedBundles);
-
-        // Save latest channel bundles
-        oneFlash.setBundles(signedBundles);
-
-        // Apply transfers to User TWO
-        Helpers.applyTransfers(twoFlash, signedBundles);
-        // Save latest channel bundles
-        twoFlash.setBundles(signedBundles);
-        System.out.println("[SUCCESS] Apply Transfer to flash channel.");
+        /***************************************
+         Create transactions.
+         ***************************************/
 
 
-        System.out.println("Transaction Applied!");
-//        System.out.println(
-//                "Transactable tokens: " +
-//                oneFlash.getFlash().getDeposits().stream().mapToInt(v -> v.intValue()).sum()
-//        );
+        // Create transfer from user one
+        ArrayList<Bundle> suggestedTransfer;
+
+        // Accept transfers from other user
+        ArrayList<Bundle> confirmedTransfers;
+
+        // Try to make 10 transfers.
+        for (int i = 0; i < 10; i++) {
+
+            // Create transaction helper and check if we need to add nodes
+            CreateTransactionHelperObject helper = Helpers.getTransactionHelper(oneFlash.getFlash().getRoot());
+
+            // Check if we need to create new addresses. This must be done before a transaction is prepared.
+            // The createTransaction will then create funding fundles for the new address.
+            if (helper.getGenerate() != 0) {
+                System.out.println("[WARN]: generating " + helper.getGenerate() + "new branches!");
+
+                // Add user one digests.
+                ArrayList<Digest> newOneDigests = Helpers.getNewBranchDigests(oneFlash, helper.getGenerate());
+
+                // Add user two digests
+                ArrayList<Digest> newTwoDigests = Helpers.getNewBranchDigests(twoFlash, helper.getGenerate());
+
+                // Now we can create new multisig addresses
+                MultisigAddress multisigAddressOne = Helpers.getNewBranch(newOneDigests, newTwoDigests, oneFlash, helper.getAddress());
+                MultisigAddress multisigAddressTwo = Helpers.getNewBranch(newOneDigests, newTwoDigests, twoFlash, helper.getAddress());
+
+                // Find the multisig with the address and append new address to children
+                Helpers.updateMultisigChildrenForUser(oneFlash, multisigAddressOne);
+                Helpers.updateMultisigChildrenForUser(twoFlash, multisigAddressTwo);
+
+                // Set the updated multisig as origin of the transaction.
+                helper.setAddress(multisigAddressOne);
+            }
+
+            // Create transfers.
+            ArrayList<Transfer> transfers = new ArrayList<>();
+            transfers.add(new Transfer(twoSettlement, 20));
+
+            // Create a transaction from a transfer.
+            suggestedTransfer = Helpers.createTransaction(transfers, helper, oneFlash, false);
+
+            System.out.println("[INFO] Created transfer suggestion.");
+
+            // TODO: check here if transaction is valid.
+
+            // If transactions should be signed create signatures.
+            ArrayList<Signature> userTwoSignatures = IotaFlashBridge.sign(twoFlash.getFlash().getRoot(), twoFlash.getSeed(), suggestedTransfer);
+            System.out.println("[INFO] Created user two signatures.");
+            // TODO: the signatures should be sind to the first user.
+
+            // Apply transfers by all users.
+            System.out.println("[INFO] Signing transfers.");
+            ArrayList<Bundle> signedBundlesOne = IotaFlashBridge.appliedSignatures(suggestedTransfer, userTwoSignatures);
+            ArrayList<Bundle> signedBundlesTwo = IotaFlashBridge.appliedSignatures(suggestedTransfer, userTwoSignatures);
+            applyTransfers(signedBundlesOne, oneFlash);
+            applyTransfers(signedBundlesTwo, twoFlash);
+
+            System.out.println("Transaction Applied! Transactable tokens: " + getFlashDeposits(oneFlash));
+        }
+
 
         System.out.println("Closing channel... not yet working...");
-/*
+    }
 
-        // Supplying the CORRECT varibles to create a closing bundle
-                bundles = Helpers.createTransaction(
-                        oneFlash,
-                        oneFlash.getFlash().getSettlementAddresses(),
-                        true
-                );
-
-        /////////////////////////////////
-        /// SIGN BUNDLES
-
-        // Get signatures for the bundles
-                oneSignatures = Helpers.signTransaction(oneFlash, bundles)
-
-        // Generate USER TWO'S Singatures
-                twoSignatures = Helpers.signTransaction(twoFlash, bundles)
-
-        // Sign bundle with your USER ONE'S signatures
-                signedBundles = transfer.appliedSignatures(bundles, oneSignatures)
-
-        // ADD USER TWOS'S signatures to the partially signed bundles
-                signedBundles = transfer.appliedSignatures(signedBundles, twoSignatures)
-
-        /////////////////////////////////
-        /// APPLY SIGNED BUNDLES
-
+    public static void applyTransfers(ArrayList<Bundle> signedBundles, UserObject user) {
         // Apply transfers to User ONE
-                oneFlash = Helpers.applyTransfers(oneFlash, signedBundles)
+        FlashObject newFlash = IotaFlashBridge.applyTransfersToUser(user, signedBundles);
+
+        // Set new flash object to user
+        user.setFlash(newFlash);
+
         // Save latest channel bundles
-                oneFlash.bundles = signedBundles
-
-        // Apply transfers to User TWO
-                twoFlash = Helpers.applyTransfers(twoFlash, signedBundles)
-        // Save latest channel bundles
-                twoFlash.bundles = signedBundles
-
-                console.log("Channel Closed")
-                console.log("Final Bundle to be attached: ")*/
+        user.setBundles(signedBundles);
     }
 
-    private static ArrayList<Bundle> signTransfer(ArrayList<Bundle> bundles, UserObject user) {
-        System.out.println("[SUCCESS] Created signatures for users.");
-        ArrayList<Signature> oneSignatures = Helpers.signTransaction(user, bundles);
-
-        System.out.println("[SUCCESS] Parial applied Signature for User one on transfer bundle");
-        // Sign bundle with your USER ONE'S signatures
-        ArrayList<Bundle> signedBundles = IotaFlashBridge.appliedSignatures(bundles, oneSignatures);
-
-        return signedBundles;
-    }
-
-    private static void setupUser(UserObject user, int TREE_DEPTH) {
-        // Create digests for the start of the channel
-        for (int i = 0; i < TREE_DEPTH + 1; i++) {
-            // Create new digest
-            Digest digest = IotaFlashBridge.getDigest(
-                    user.getSeed(),
-                    user.getIndex(),
-                    user.getSecurity()
-            );
-            System.out.println("Adding digest (" + digest.toString() + ") to user " + user.getUserIndex());
-            // Increment key index
-            user.incrementIndex();
-            user.add(digest);
+    public static double getFlashDeposits(UserObject user) {
+        double sum = 0;
+        for (double deposit : user.getFlash().getDeposits()) {
+            sum += deposit;
         }
+        return sum;
     }
 
-    private static void createInitialPartialDigests(ArrayList<UserObject> allUsers, UserObject currentUser) {
 
-        // Generate the first addresses
-        ArrayList<MultisigAddress> oneMultisigs = new ArrayList<MultisigAddress>();
-
-
-        System.out.println("_________________________________________________________________");
-        System.out.println("Creating multisigs on user: " + currentUser.getUserIndex());
-        int index = 0;
-        // Create address
-        for (Digest digest: allUsers.get(index).getPartialDigests()) {
-            int i = index;
-
-            MultisigAddress addy = IotaFlashBridge.composeAddress(
-                    allUsers.stream().map(u -> u.getPartialDigests().get(i)).collect(Collectors.toCollection(ArrayList::new))
-            );
-
-            System.out.println("Multisig: " + addy.toString());
-
-            // Add key index in
-            addy.setIndex(digest.getIndex());
-            // Add the signing index to the object IMPORTANT
-            addy.setSigningIndex(currentUser.getUserIndex() * digest.getSecurity());
-            // Get the sum of all digest security to get address security sum
-            addy.setSecuritySum(allUsers.stream()
-                    .map(u -> u.getPartialDigests().get(i))
-                    .mapToInt(Digest::getSecurity)
-                    .sum()
-            );
-            addy.setSecurity(digest.getSecurity());
-            oneMultisigs.add(addy);
-            index++;
-        }
-        currentUser.setMultisigDigests(oneMultisigs);
-    }
-
-    private static ArrayList<MultisigAddress> shiftCopyArray(ArrayList<MultisigAddress> input) {
-        ArrayList<MultisigAddress> output = new ArrayList<>();
-
-        for (int i = 1; i < input.size(); i++) {
-            output.add(input.get(i));
-        }
-
-        return output;
-    }
-
-    private static void test() throws IOException {
-
-        System.out.println("IOTA Flash channel tester");
-
-        String pathToLib = "res/iota.flash.js";
-
-        System.out.println("Loading lib into V8 engine");
-        System.out.println("Lib imported");
-
-
-        System.out.println("Testing getDigest(seed, index, security):");
-        Digest digest1 = IotaFlashBridge.getDigest("USERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSER", 0, 2);
-        Digest digest2 = IotaFlashBridge.getDigest("USERTWOUSERTWOUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSER", 0, 2);
-        System.out.println("Digest1: " + digest1.toString());
-
-
-        System.out.println("Testing composeAddress(digests):");
-        ArrayList<Digest> digests = new ArrayList<Digest>();
-        digests.add(digest1);
-        digests.add(digest2);
-        MultisigAddress composedAddr = IotaFlashBridge.composeAddress(digests);
-        System.out.println("Got multisig addr for digests: " + composedAddr.getAddress() + ", securitySum: " + composedAddr.getSecuritySum());
-
-        testPrepare();
-    }
-
-    private static void testPrepare() {
-
-        System.out.println("Testing prepare()");
-        ArrayList<String> settlementAddr = new ArrayList<String>();
-        settlementAddr.add("RCZHCRDWMGJPHKROKEGVADVJXPGKEKNJRNLZZFPITUVEWNPGIWNUMKTYKMNB9DCNLWGMJZDNKYQDQKDLC");
-        ArrayList<Integer> depositsPrep = new ArrayList<Integer>();
-        ArrayList<Transfer> transfers = new ArrayList<Transfer>();
-
-        IotaFlashBridge.prepare(settlementAddr, depositsPrep, 0, transfers);
+    /**
+     * acceptTransfer applies signatures of a
+     * @param bundles half signed transfers
+     * @param signatures signatures of the second user
+     */
+    public static void acceptTransfer(ArrayList<Bundle> bundles, ArrayList<Signature> signatures, UserObject user) {
+        ArrayList<Bundle> signedBundles = IotaFlashBridge.appliedSignatures(bundles, signatures);
+        applyTransfers(signedBundles, user);
     }
 }

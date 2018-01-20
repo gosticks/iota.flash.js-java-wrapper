@@ -16,4 +16,8 @@ public class CreateTransactionHelperObject {
     public MultisigAddress getAddress() {
         return address;
     }
+
+    public void setAddress(MultisigAddress address) {
+        this.address = address;
+    }
 }

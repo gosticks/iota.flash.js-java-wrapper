@@ -3,6 +3,7 @@ package iotaFlashWrapper;
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Array;
 import com.eclipsesource.v8.V8Object;
+import com.eclipsesource.v8.V8ResultUndefined;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
 import iotaFlashWrapper.Model.*;
 
@@ -52,7 +53,17 @@ public class V8Converter {
         ArrayList<String> settlementAddresses = (ArrayList<String>) inputMap.get("settlementAddresses");
         MultisigAddress root = multisigAddressFromPropertyMap((Map<String, Object>) inputMap.get("root"));
         MultisigAddress remainderAddress = multisigAddressFromPropertyMap((Map<String, Object>) inputMap.get("remainderAddress"));
-        ArrayList<Integer> deposits = (ArrayList<Integer>) inputMap.get("deposits");
+        ArrayList<Double> deposits = new ArrayList<>();
+        if (inputMap.get("deposits") instanceof ArrayList) {
+            Object depositEntry = inputMap.get("deposits");
+            if (((ArrayList<Object>) depositEntry).size() > 0 && ((ArrayList<Object>) depositEntry).get(0) instanceof Integer) {
+                for (int val: (ArrayList<Integer>) depositEntry) {
+                    deposits.add(new Double(val));
+                }
+            } else {
+                deposits = (ArrayList<Double>) depositEntry;
+            }
+        }
         ArrayList<Bundle> transfers = bundleListFromArrayList((ArrayList<Object>) inputMap.get("transfers"));
         ArrayList<Bundle> outputs = bundleListFromArrayList((ArrayList<Object>) inputMap.get("outputs"));
 
@@ -84,7 +95,17 @@ public class V8Converter {
         ArrayList<Bundle> ret = new ArrayList<>();
 
         for (Object o: input) {
-            ret.add(bundleFromArrayList((ArrayList<Object>) o));
+            if (o instanceof Map) {
+                if (((Map) o).get("bundles") instanceof String) {
+                    ArrayList<Object> bundles = (ArrayList<Object>) ((Map<String, Object>) o).get("bundles");
+                    ret.add(bundleFromArrayList(bundles));
+                } else {
+                    continue;
+                }
+            }
+            if (o instanceof ArrayList) {
+                ret.add(bundleFromArrayList((ArrayList<Object>) o));
+            }
         }
 
 
@@ -92,6 +113,10 @@ public class V8Converter {
     }
 
     public static MultisigAddress multisigAddressFromV8Object(V8Object input) {
+        if (input.isUndefined()) {
+            System.out.println("[ERROR]: could not parse object");
+            return null;
+        }
         Map<String, ? super Object> multiSigMap = V8ObjectUtils.toMap(input);
         return multisigAddressFromPropertyMap(multiSigMap);
     }
@@ -100,7 +125,6 @@ public class V8Converter {
         // Parse result into Java Obj.
         String addr = (String) propMap.get("address");
         int secSum = (Integer) propMap.get("securitySum");
-
 
         ArrayList<MultisigAddress> children = new ArrayList<>();
 
@@ -111,11 +135,32 @@ public class V8Converter {
 
         MultisigAddress multisig = new MultisigAddress(addr, secSum, children);
 
+        if (propMap.get("bundles") instanceof ArrayList) {
+            ArrayList<Bundle> bundles = new ArrayList<>();
+            for (Object bundle: (ArrayList<Object>) propMap.get("bundles")) {
+                Bundle b = new Bundle();
+                if (!(bundle instanceof  ArrayList)) {
+                    continue;
+                } else {
+                    for (Object transactionMap: (ArrayList<Object>) bundle) {
+                        b.getBundles().add(transactionFromObject(transactionMap));
+                    }
+                }
+                bundles.add(b);
+            }
+
+            multisig.setBundles(bundles);
+        }
+
         if (propMap.get("index") != null) {
             multisig.setIndex((Integer) propMap.get("index"));
         }
         if (propMap.get("signingIndex") != null) {
             multisig.setSigningIndex((Integer) propMap.get("signingIndex"));
+        }
+
+        if (propMap.get("security") instanceof Integer) {
+            multisig.setSecurity((Integer) propMap.get("security"));
         }
 
         return multisig;
@@ -126,6 +171,10 @@ public class V8Converter {
         // Parse return as array of bundles
         ArrayList<Bundle> returnBundles = new ArrayList<>();
         for (Object bundleItem: inputList) {
+            if (!(bundleItem instanceof  ArrayList)) {
+                System.out.println("[ERROR]: got undefined for bunle");
+                continue;
+            }
             ArrayList<Object> bundleContent = (ArrayList<Object>) bundleItem;
 
             ArrayList<Transaction> returnedTransactions = new ArrayList<>();

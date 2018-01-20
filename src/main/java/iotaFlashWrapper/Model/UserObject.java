@@ -5,25 +5,27 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class UserObject {
-    private int userIndex = 1;
+    private int userIndex;
     private String seed;
     private int index = 0;
-    private int security = 2;
-    private int depth = 4;
+    private int security;
+    private int depth;
     private ArrayList<Bundle> bundles = new ArrayList<Bundle>();
     private ArrayList<Digest> partialDigests = new ArrayList<Digest>();
     private ArrayList<MultisigAddress> multisigDigests = new ArrayList<MultisigAddress>();
     private FlashObject flash;
 
-    public UserObject(int userID, String seed, int depth, FlashObject flash) {
+    public UserObject(int userID, String seed, int depth, int security, FlashObject flash) {
         this.userIndex = userID;
         this.seed = seed;
         this.depth = depth;
+        this.security = security;
         this.flash = flash;
     }
 
-    public void incrementIndex() {
-        index++;
+    public int incrementIndex() {
+         this.index = this.index + 1;
+         return index;
     }
 
     public void add(Digest digest) {

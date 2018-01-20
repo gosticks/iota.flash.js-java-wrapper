@@ -28,12 +28,17 @@ public class Bundle {
 
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<String, Object>();
+
+        map.put("bundles", toArrayList());
+        return map;
+    }
+
+    public List<Object> toArrayList() {
         List<Object> bundleList = new ArrayList<Object>();
         for (Transaction b: bundles) {
             bundleList.add(b.toMap());
         }
-        map.put("bundles", bundleList);
-        return map;
+        return bundleList;
     }
 
     public ArrayList<Transaction> getBundles() {

@@ -124,7 +124,7 @@ public class IotaFlashBridge {
      * @param transfers array of all transfers (value, address) pairs
      * @return
      */
-    public static ArrayList<Transfer> prepare(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits, int index, ArrayList<Transfer> transfers) {
+    public static ArrayList<Transfer> prepare(ArrayList<String> settlementAddresses, ArrayList<Double> deposits, int index, ArrayList<Transfer> transfers) {
 
         // Now put all params into JS ready array.
         List<Object> params = new ArrayList<>();
@@ -145,7 +145,7 @@ public class IotaFlashBridge {
      * @param deposits
      * @return
      */
-    public static ArrayList<Transfer> close(ArrayList<String> settlementAddresses, ArrayList<Integer> deposits) {
+    public static ArrayList<Transfer> close(ArrayList<String> settlementAddresses, ArrayList<Double> deposits) {
         V8Array saJS = V8ObjectUtils.toV8Array(engine, settlementAddresses);
         // Deposits
         V8Array depositsJS = V8ObjectUtils.toV8Array(engine, deposits);
@@ -172,16 +172,13 @@ public class IotaFlashBridge {
      * @return
      */
     public static ArrayList<Bundle> compose(int balance,
-                                            List<Integer> deposits,
+                                            List<Double> deposits,
                                             ArrayList<Bundle> outputs,
                                             MultisigAddress root,
                                             MultisigAddress remainderAddress,
                                             ArrayList<Bundle> history,
                                             ArrayList<Transfer> transfers,
                                             boolean close) {
-
-
-
         // Create params.
         // Now put all params into JS ready array.
         List<Object> params = new ArrayList<Object>();
