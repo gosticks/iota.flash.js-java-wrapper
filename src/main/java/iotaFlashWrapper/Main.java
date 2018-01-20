@@ -187,7 +187,59 @@ public class Main {
         }
 
 
-        System.out.println("Closing channel... not yet working...");
+        // Create transaction helper and check if we need to add nodes
+        CreateTransactionHelperObject closeHelper = Helpers.getTransactionHelper(oneFlash.getFlash().getRoot());
+
+        // Check if we need to create new addresses. This must be done before a transaction is prepared.
+        // The createTransaction will then create funding fundles for the new address.
+        if (closeHelper.getGenerate() != 0) {
+            System.out.println("[WARN]: generating " + closeHelper.getGenerate() + "new branches!");
+
+            // Add user one digests.
+            ArrayList<Digest> newOneDigests = Helpers.getNewBranchDigests(oneFlash, closeHelper.getGenerate());
+
+            // Add user two digests
+            ArrayList<Digest> newTwoDigests = Helpers.getNewBranchDigests(twoFlash, closeHelper.getGenerate());
+
+            // Now we can create new multisig addresses
+            MultisigAddress multisigAddressOne = Helpers.getNewBranch(newOneDigests, newTwoDigests, oneFlash, closeHelper.getAddress());
+            MultisigAddress multisigAddressTwo = Helpers.getNewBranch(newOneDigests, newTwoDigests, twoFlash, closeHelper.getAddress());
+
+            // Find the multisig with the address and append new address to children
+            Helpers.updateMultisigChildrenForUser(oneFlash, multisigAddressOne);
+            Helpers.updateMultisigChildrenForUser(twoFlash, multisigAddressTwo);
+
+            // Set the updated multisig as origin of the transaction.
+            closeHelper.setAddress(multisigAddressOne);
+        }
+
+        System.out.println("[INFO] Closing channel...");
+
+        // Create transfers.
+        ArrayList<Transfer> closeTransfers = new ArrayList<>();
+        closeTransfers.add(new Transfer(oneSettlement, 0));
+        closeTransfers.add(new Transfer(twoSettlement, 0));
+        suggestedTransfer = Helpers.createTransaction(closeTransfers, closeHelper, oneFlash, true);
+
+        System.out.println("[INFO] Created transfer suggestion.");
+
+        // TODO: check here if transaction is valid.
+
+        // If transactions should be signed create signatures.
+        ArrayList<Signature> userTwoSignatures = IotaFlashBridge.sign(twoFlash.getFlash().getRoot(), twoFlash.getSeed(), suggestedTransfer);
+        System.out.println("[INFO] Created user two signatures.");
+        // TODO: the signatures should be sind to the first user.
+
+        // Apply transfers by all users.
+        System.out.println("[INFO] Signing transfers.");
+        ArrayList<Bundle> signedBundlesOne = IotaFlashBridge.appliedSignatures(suggestedTransfer, userTwoSignatures);
+        ArrayList<Bundle> signedBundlesTwo = IotaFlashBridge.appliedSignatures(suggestedTransfer, userTwoSignatures);
+        applyTransfers(signedBundlesOne, oneFlash);
+        applyTransfers(signedBundlesTwo, twoFlash);
+
+        System.out.println("[INFO] Channel closed!");
+
+        System.out.println("[INFO] Final address:" + signedBundlesOne.get(0));
     }
 
     public static void applyTransfers(ArrayList<Bundle> signedBundles, UserObject user) {
