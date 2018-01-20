@@ -3,7 +3,6 @@ package iotaFlashWrapper;
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Array;
 import com.eclipsesource.v8.V8Object;
-import com.eclipsesource.v8.V8ResultUndefined;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
 import iotaFlashWrapper.Model.*;
 
@@ -36,7 +35,7 @@ public class V8Converter {
         return signatures;
     }
 
-    public static V8Object multisigToV8Object(V8 engine, MultisigAddress multisig) {
+    public static V8Object multisigToV8Object(V8 engine, Multisig multisig) {
         Map<String, Object> sigMapg = multisig.toMap();
         return V8ObjectUtils.toV8Object(engine, sigMapg);
     }
@@ -51,8 +50,8 @@ public class V8Converter {
         Integer singersCount = (Integer) inputMap.get("signersCount");
         Integer balance = (Integer) inputMap.get("balance");
         ArrayList<String> settlementAddresses = (ArrayList<String>) inputMap.get("settlementAddresses");
-        MultisigAddress root = multisigAddressFromPropertyMap((Map<String, Object>) inputMap.get("root"));
-        MultisigAddress remainderAddress = multisigAddressFromPropertyMap((Map<String, Object>) inputMap.get("remainderAddress"));
+        Multisig root = multisigAddressFromPropertyMap((Map<String, Object>) inputMap.get("root"));
+        Multisig remainderAddress = multisigAddressFromPropertyMap((Map<String, Object>) inputMap.get("remainderAddress"));
         ArrayList<Double> deposits = new ArrayList<>();
         if (inputMap.get("deposits") instanceof ArrayList) {
             Object depositEntry = inputMap.get("deposits");
@@ -75,8 +74,8 @@ public class V8Converter {
         List<Object> bundleTmp = new ArrayList<Object>();
         for (Bundle b: bundles) {
             List<Object> transactions = new ArrayList<Object>();
-            for (Transaction t: b.getBundles()) {
-                transactions.add(t.toMap());
+            for (jota.model.Transaction tx: b.getTransactions()) {
+                transactions.add(((Transaction) tx).toMap());
             }
             bundleTmp.add(transactions);
         }
@@ -112,7 +111,7 @@ public class V8Converter {
         return ret;
     }
 
-    public static MultisigAddress multisigAddressFromV8Object(V8Object input) {
+    public static Multisig multisigAddressFromV8Object(V8Object input) {
         if (input.isUndefined()) {
             System.out.println("[ERROR]: could not parse object");
             return null;
@@ -121,19 +120,19 @@ public class V8Converter {
         return multisigAddressFromPropertyMap(multiSigMap);
     }
 
-    public static MultisigAddress multisigAddressFromPropertyMap(Map<String, Object> propMap) {
+    public static Multisig multisigAddressFromPropertyMap(Map<String, Object> propMap) {
         // Parse result into Java Obj.
         String addr = (String) propMap.get("address");
         int secSum = (Integer) propMap.get("securitySum");
 
-        ArrayList<MultisigAddress> children = new ArrayList<>();
+        ArrayList<Multisig> children = new ArrayList<>();
 
         for (Object child: (ArrayList<Object>) propMap.get("children")) {
             Map<String, ? super Object> childPropMap = (Map<String, ? super Object>) child;
             children.add(multisigAddressFromPropertyMap(childPropMap));
         }
 
-        MultisigAddress multisig = new MultisigAddress(addr, secSum, children);
+        Multisig multisig = new Multisig(addr, secSum, children);
 
         if (propMap.get("bundles") instanceof ArrayList) {
             ArrayList<Bundle> bundles = new ArrayList<>();
@@ -143,7 +142,7 @@ public class V8Converter {
                     continue;
                 } else {
                     for (Object transactionMap: (ArrayList<Object>) bundle) {
-                        b.getBundles().add(transactionFromObject(transactionMap));
+                        b.getWrappedTransactions().add(transactionFromObject(transactionMap));
                     }
                 }
                 bundles.add(b);

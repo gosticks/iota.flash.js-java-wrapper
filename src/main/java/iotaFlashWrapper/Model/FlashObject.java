@@ -11,8 +11,8 @@ public class FlashObject {
     ArrayList<Double> deposits;
     ArrayList<Bundle> outputs = new ArrayList<Bundle>();
     ArrayList<Bundle> transfers = new ArrayList<Bundle>();
-    MultisigAddress root;
-    MultisigAddress remainderAddress;
+    Multisig root;
+    Multisig remainderAddress;
 
 
     public FlashObject(int signersCount, int balance, ArrayList<Double> deposits) {
@@ -21,7 +21,7 @@ public class FlashObject {
         this.deposits = deposits;
     }
 
-    public FlashObject(int signersCount, int balance, ArrayList<String> settlementAddresses, ArrayList<Double> deposits, ArrayList<Bundle> outputs, ArrayList<Bundle> transfers, MultisigAddress root, MultisigAddress remainderAddress) {
+    public FlashObject(int signersCount, int balance, ArrayList<String> settlementAddresses, ArrayList<Double> deposits, ArrayList<Bundle> outputs, ArrayList<Bundle> transfers, Multisig root, Multisig remainderAddress) {
         this.signersCount = signersCount;
         this.balance = balance;
         this.settlementAddresses = settlementAddresses;
@@ -94,7 +94,7 @@ public class FlashObject {
         return balance;
     }
 
-    public MultisigAddress getRoot() {
+    public Multisig getRoot() {
         return root;
     }
 
@@ -110,15 +110,15 @@ public class FlashObject {
         return transfers;
     }
 
-    public void setRemainderAddress(MultisigAddress remainderAddress) {
+    public void setRemainderAddress(Multisig remainderAddress) {
         this.remainderAddress = remainderAddress;
     }
 
-    public MultisigAddress getRemainderAddress() {
+    public Multisig getRemainderAddress() {
         return remainderAddress;
     }
 
-    public void setRoot(MultisigAddress root) {
+    public void setRoot(Multisig root) {
         this.root = root;
     }
 

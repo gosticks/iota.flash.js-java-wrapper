@@ -10343,6 +10343,7 @@ function applyTransfers(root, deposit, outputs, remainder, history, transfers) {
     let remaining = deposit.reduce((a,b) => a+b, 0); 
     let total = diff.filter(v => v.value > 0).reduce((acc,tx) => acc + tx.value, 0);
     if (total > remaining) {
+    	console.log("NO FUNDS")
       throw new Error(TransferErrors.INSUFFICIENT_FUNDS);
     }
     const depositTotal = deposit.reduce((acc, d) => acc + d, 0);

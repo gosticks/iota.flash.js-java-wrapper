@@ -10,17 +10,19 @@ public class UserObject {
     private int index = 0;
     private int security;
     private int depth;
+    private String address;
     private ArrayList<Bundle> bundles = new ArrayList<Bundle>();
     private ArrayList<Digest> partialDigests = new ArrayList<Digest>();
-    private ArrayList<MultisigAddress> multisigDigests = new ArrayList<MultisigAddress>();
+    private ArrayList<Multisig> multisigDigests = new ArrayList<Multisig>();
     private FlashObject flash;
 
-    public UserObject(int userID, String seed, int depth, int security, FlashObject flash) {
+    public UserObject(int userID, String seed, int depth, int security, String address, FlashObject flash) {
         this.userIndex = userID;
         this.seed = seed;
         this.depth = depth;
         this.security = security;
         this.flash = flash;
+        this.address = address;
     }
 
     public int incrementIndex() {
@@ -49,7 +51,7 @@ public class UserObject {
             out += "\t" + d.toString() + "\n";
         }
         out += "multisigDigests: " + "\n";
-        for (MultisigAddress m: multisigDigests) {
+        for (Multisig m: multisigDigests) {
             out += "\t" + m.toString() + "\n";
         }
         out += "Flash: " + "\n";
@@ -92,7 +94,7 @@ public class UserObject {
      * Getters and Setters
      */
 
-    public void setMultisigDigests(ArrayList<MultisigAddress> multisigDigests) {
+    public void setMultisigDigests(ArrayList<Multisig> multisigDigests) {
         this.multisigDigests = multisigDigests;
     }
 
@@ -108,7 +110,7 @@ public class UserObject {
         this.bundles = bundles;
     }
 
-    public ArrayList<MultisigAddress> getMultisigDigests() {
+    public ArrayList<Multisig> getMultisigDigests() {
         return multisigDigests;
     }
 
@@ -140,5 +142,12 @@ public class UserObject {
         return flash;
     }
 
+    public int getDepth() {
+        return depth;
+    }
+
+    public String getAddress() {
+        return address;
+    }
 }
 

@@ -1,11 +1,9 @@
 package iotaFlashWrapper;
 
-import com.sun.org.apache.xpath.internal.operations.Mult;
 import iotaFlashWrapper.Model.*;
+import jota.utils.Checksum;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 
 public class Main {
@@ -17,10 +15,10 @@ public class Main {
         // Run a test based on the flash example
         // Link: https://github.com/iotaledger/iota.flash.js/blob/master/examples/flash.js
 
-        String oneSeed = "USERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSERONEUSER";
-        String oneSettlement = "USERONE9ADDRESS9USERONE9ADDRESS9USERONE9ADDRESS9USERONE9ADDRESS9USERONE9ADDRESS9U";
-        String twoSeed = "USERTWOUSERTWOUSERTWOUSERTWOUSERTWOUSERTWOUSERTWOUSERTWOUSERTWOUSERTWOUSERTWOUSER";
-        String twoSettlement = "USERTWO9ADDRESS9USERTWO9ADDRESS9USERTWO9ADDRESS9USERTWO9ADDRESS9USERTWO9ADDRESS9U";
+        String oneSeed = "GXGIIGUTA9MCRLFMVGLAYBENVGOCWNXRCBQNYGMQKOZRRNSICRPXGONVOUTIMOGLUWSETZSRSYRRSBABR";
+        String oneSettlement = "SFAMPVUSPED9NZIVRDNOVSOLNQ9QHZVHDEWBPTYEJJC9QUMOSUQUQWL9BBENVVEFSCQCVBEXHGPACHRVX";
+        String twoSeed = "GXGIIGUTA9MCRLFMVGLAYBENVGOCWNXRCBQNYGMQKOZRRNSIIIIXGONVUOTIMOGLUWSETZSRSYRRSBABR";
+        String twoSettlement = "9ZPQTA9UPWFW9NHX9SJ9EYPYYGMMZUDZHHYTVHKZHXKBMOCNTDIKRWFVBMFYEUL9IBIALHHNYZWBOEJHA";
 
         //////////////////////////////////
         // INITIAL CHANNEL CONDITIONS
@@ -32,17 +30,17 @@ public class Main {
         // Flash tree depth
         int TREE_DEPTH = 4;
         // Total channel Balance
-        int CHANNEL_BALANCE = 2000;
+        int CHANNEL_BALANCE = 200;
         // Users deposits
         ArrayList<Double> DEPOSITS = new ArrayList<>();
-        DEPOSITS.add(1000.0);
-        DEPOSITS.add(1000.0);
+        DEPOSITS.add(100.0);
+        DEPOSITS.add(100.0);
         // Setup users.
         FlashObject oneFlashObj = new FlashObject(SIGNERS_COUNT, CHANNEL_BALANCE, DEPOSITS);
-        UserObject oneFlash = new UserObject(0, oneSeed, TREE_DEPTH, SECURITY, oneFlashObj);
+        UserObject oneFlash = new UserObject(0, oneSeed, TREE_DEPTH, SECURITY, oneSettlement, oneFlashObj);
 
         FlashObject twoFlashObj = new FlashObject(SIGNERS_COUNT, CHANNEL_BALANCE, DEPOSITS);
-        UserObject twoFlash = new UserObject(1, twoSeed, TREE_DEPTH, SECURITY, twoFlashObj);
+        UserObject twoFlash = new UserObject(1, twoSeed, TREE_DEPTH, SECURITY, twoSettlement, twoFlashObj);
 
         // USER ONE
         ArrayList<Digest> oneDigests = Helpers.getDigestsForUser(oneFlash, TREE_DEPTH);
@@ -65,10 +63,10 @@ public class Main {
          ***************************************/
 
         // Create multisigs.
-        ArrayList<MultisigAddress> oneMultisigs = Helpers.getMultisigsForUser(allUserDigests, oneFlash);
+        ArrayList<Multisig> oneMultisigs = Helpers.getMultisigsForUser(allUserDigests, oneFlash);
 
         // Set renainder address.
-        MultisigAddress oneRemainderAddr = oneMultisigs.remove(0); //shiftCopyArray();
+        Multisig oneRemainderAddr = oneMultisigs.remove(0); //shiftCopyArray();
         oneFlash.getFlash().setRemainderAddress(oneRemainderAddr);
 
         // Build flash trees
@@ -84,9 +82,9 @@ public class Main {
          User one setup.
          ***************************************/
 
-        ArrayList<MultisigAddress> twoMultisigs = Helpers.getMultisigsForUser(allUserDigests, twoFlash);
+        ArrayList<Multisig> twoMultisigs = Helpers.getMultisigsForUser(allUserDigests, twoFlash);
         // Set user two remainder addr.
-        MultisigAddress twoRemainderAddr = twoMultisigs.remove(0);
+        Multisig twoRemainderAddr = twoMultisigs.remove(0);
         twoFlash.getFlash().setRemainderAddress(twoRemainderAddr);
 
         // Build flash trees
@@ -98,7 +96,7 @@ public class Main {
 
 
         /***************************************
-         Setup tettlements.
+         Setup settlements.
          ***************************************/
 
         ArrayList<String> settlementAddresses = new ArrayList<>();
@@ -120,6 +118,17 @@ public class Main {
 
         System.out.println("Channel Setup completed!");
 
+
+
+        /***************************************
+         Root address of channel.
+         ***************************************/
+
+        String multisgFulladdr = Checksum.addChecksum(oneFlash.getFlash().getRoot().getAddress());
+
+        System.out.println("[ROOT ADDR]:" + multisgFulladdr);
+
+
         /***************************************
          Create transactions.
          ***************************************/
@@ -132,7 +141,7 @@ public class Main {
         ArrayList<Bundle> confirmedTransfers;
 
         // Try to make 10 transfers.
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 9; i++) {
 
             // Create transaction helper and check if we need to add nodes
             CreateTransactionHelperObject helper = Helpers.getTransactionHelper(oneFlash.getFlash().getRoot());
@@ -149,20 +158,20 @@ public class Main {
                 ArrayList<Digest> newTwoDigests = Helpers.getNewBranchDigests(twoFlash, helper.getGenerate());
 
                 // Now we can create new multisig addresses
-                MultisigAddress multisigAddressOne = Helpers.getNewBranch(newOneDigests, newTwoDigests, oneFlash, helper.getAddress());
-                MultisigAddress multisigAddressTwo = Helpers.getNewBranch(newOneDigests, newTwoDigests, twoFlash, helper.getAddress());
+                Multisig multisigOne = Helpers.getNewBranch(newOneDigests, newTwoDigests, oneFlash, helper.getAddress());
+                Multisig multisigTwo = Helpers.getNewBranch(newOneDigests, newTwoDigests, twoFlash, helper.getAddress());
 
                 // Find the multisig with the address and append new address to children
-                Helpers.updateMultisigChildrenForUser(oneFlash, multisigAddressOne);
-                Helpers.updateMultisigChildrenForUser(twoFlash, multisigAddressTwo);
+                Helpers.updateMultisigChildrenForUser(oneFlash, multisigOne);
+                Helpers.updateMultisigChildrenForUser(twoFlash, multisigTwo);
 
                 // Set the updated multisig as origin of the transaction.
-                helper.setAddress(multisigAddressOne);
+                helper.setAddress(multisigOne);
             }
 
             // Create transfers.
             ArrayList<Transfer> transfers = new ArrayList<>();
-            transfers.add(new Transfer(twoSettlement, 20));
+            transfers.add(new Transfer(twoSettlement, 10));
 
             // Create a transaction from a transfer.
             suggestedTransfer = Helpers.createTransaction(transfers, helper, oneFlash, false);
@@ -180,10 +189,17 @@ public class Main {
             System.out.println("[INFO] Signing transfers.");
             ArrayList<Bundle> signedBundlesOne = IotaFlashBridge.appliedSignatures(suggestedTransfer, userTwoSignatures);
             ArrayList<Bundle> signedBundlesTwo = IotaFlashBridge.appliedSignatures(suggestedTransfer, userTwoSignatures);
-            applyTransfers(signedBundlesOne, oneFlash);
-            applyTransfers(signedBundlesTwo, twoFlash);
+            Helpers.applyTransfers(signedBundlesOne, oneFlash);
+            Helpers.applyTransfers(signedBundlesTwo, twoFlash);
 
             System.out.println("Transaction Applied! Transactable tokens: " + getFlashDeposits(oneFlash));
+
+            double oneBalance = getBalanceOfUser(oneFlash);
+            double twoBalance = getBalanceOfUser(twoFlash);
+
+            System.out.println("Deposits");
+            System.out.println("User one:" + oneBalance + ", deposits: " + oneFlash.getFlash().getDeposits() );
+            System.out.println("User two:" + twoBalance + ", deposits: " + oneFlash.getFlash().getDeposits());
         }
 
 
@@ -202,23 +218,25 @@ public class Main {
             ArrayList<Digest> newTwoDigests = Helpers.getNewBranchDigests(twoFlash, closeHelper.getGenerate());
 
             // Now we can create new multisig addresses
-            MultisigAddress multisigAddressOne = Helpers.getNewBranch(newOneDigests, newTwoDigests, oneFlash, closeHelper.getAddress());
-            MultisigAddress multisigAddressTwo = Helpers.getNewBranch(newOneDigests, newTwoDigests, twoFlash, closeHelper.getAddress());
+            Multisig multisigOne = Helpers.getNewBranch(newOneDigests, newTwoDigests, oneFlash, closeHelper.getAddress());
+            Multisig multisigTwo = Helpers.getNewBranch(newOneDigests, newTwoDigests, twoFlash, closeHelper.getAddress());
 
             // Find the multisig with the address and append new address to children
-            Helpers.updateMultisigChildrenForUser(oneFlash, multisigAddressOne);
-            Helpers.updateMultisigChildrenForUser(twoFlash, multisigAddressTwo);
+            Helpers.updateMultisigChildrenForUser(oneFlash, multisigOne);
+            Helpers.updateMultisigChildrenForUser(twoFlash, multisigTwo);
 
             // Set the updated multisig as origin of the transaction.
-            closeHelper.setAddress(multisigAddressOne);
+            closeHelper.setAddress(multisigOne);
+
+
         }
 
         System.out.println("[INFO] Closing channel...");
 
         // Create transfers.
         ArrayList<Transfer> closeTransfers = new ArrayList<>();
-        closeTransfers.add(new Transfer(oneSettlement, 0));
-        closeTransfers.add(new Transfer(twoSettlement, 0));
+        closeTransfers.add(new Transfer(oneSettlement, 5));
+        closeTransfers.add(new Transfer(twoSettlement, 5));
         suggestedTransfer = Helpers.createTransaction(closeTransfers, closeHelper, oneFlash, true);
 
         System.out.println("[INFO] Created transfer suggestion.");
@@ -234,24 +252,16 @@ public class Main {
         System.out.println("[INFO] Signing transfers.");
         ArrayList<Bundle> signedBundlesOne = IotaFlashBridge.appliedSignatures(suggestedTransfer, userTwoSignatures);
         ArrayList<Bundle> signedBundlesTwo = IotaFlashBridge.appliedSignatures(suggestedTransfer, userTwoSignatures);
-        applyTransfers(signedBundlesOne, oneFlash);
-        applyTransfers(signedBundlesTwo, twoFlash);
+        Helpers.applyTransfers(signedBundlesOne, oneFlash);
+        Helpers.applyTransfers(signedBundlesTwo, twoFlash);
 
         System.out.println("[INFO] Channel closed!");
 
-        System.out.println("[INFO] Final address:" + signedBundlesOne.get(0));
+        Helpers.POWClosedBundle(signedBundlesTwo);
+
+        // System.out.println("[INFO] Final address:" + Attach signedBundlesOne);
     }
 
-    public static void applyTransfers(ArrayList<Bundle> signedBundles, UserObject user) {
-        // Apply transfers to User ONE
-        FlashObject newFlash = IotaFlashBridge.applyTransfersToUser(user, signedBundles);
-
-        // Set new flash object to user
-        user.setFlash(newFlash);
-
-        // Save latest channel bundles
-        user.setBundles(signedBundles);
-    }
 
     public static double getFlashDeposits(UserObject user) {
         double sum = 0;
@@ -261,14 +271,21 @@ public class Main {
         return sum;
     }
 
+    public static double getBalanceOfUser(UserObject user) {
+        double balance = 0.0;
+        ArrayList<Bundle> transfers = user.getBundles();
+        if (transfers.size() == 0) {
+            return 0.0;
+        }
 
-    /**
-     * acceptTransfer applies signatures of a
-     * @param bundles half signed transfers
-     * @param signatures signatures of the second user
-     */
-    public static void acceptTransfer(ArrayList<Bundle> bundles, ArrayList<Signature> signatures, UserObject user) {
-        ArrayList<Bundle> signedBundles = IotaFlashBridge.appliedSignatures(bundles, signatures);
-        applyTransfers(signedBundles, user);
+        for (Bundle bundle : transfers) {
+            for (Transaction tx : bundle.getWrappedTransactions()) {
+                if (tx.getAddress().equals(user.getAddress())) {
+                    balance += tx.getValue() / 2;
+                }
+            }
+        }
+
+        return balance;
     }
 }

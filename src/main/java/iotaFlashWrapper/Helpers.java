@@ -1,12 +1,12 @@
 package iotaFlashWrapper;
 
-import com.sun.org.apache.xpath.internal.operations.Mult;
 import iotaFlashWrapper.Model.*;
+import jota.IotaAPI;
+import jota.error.ArgumentException;
 
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Helpers {
 
@@ -16,7 +16,7 @@ public class Helpers {
      * @param root multisig address at the top of the tree
      * @return Transaction object with address and number of addresses to create.
      */
-    public static CreateTransactionHelperObject getTransactionHelper(MultisigAddress root) {
+    public static CreateTransactionHelperObject getTransactionHelper(Multisig root) {
         return IotaFlashBridge.updateLeafToRoot(root);
     }
 
@@ -101,11 +101,11 @@ public class Helpers {
      * @param address
      * @return
      */
-    public static MultisigAddress getNewBranch(ArrayList<Digest> oneDigests, ArrayList<Digest> twoDigests, UserObject user, MultisigAddress address) {
+    public static Multisig getNewBranch(ArrayList<Digest> oneDigests, ArrayList<Digest> twoDigests, UserObject user, Multisig address) {
         ArrayList<ArrayList<Digest>> userDigestList = new ArrayList<>();
         userDigestList.add(oneDigests);
         userDigestList.add(twoDigests);
-        ArrayList<MultisigAddress> multisigs = getMultisigsForUser(userDigestList, user);
+        ArrayList<Multisig> multisigs = getMultisigsForUser(userDigestList, user);
 
         System.out.println("[INFO]: Adding to address " + address.getAddress());
 
@@ -115,7 +115,7 @@ public class Helpers {
         }
 
         // Clone the address to avoid overwriting params.
-        MultisigAddress output = address.clone();
+        Multisig output = address.clone();
 
         // Add new multisigs to address.
         output.push(multisigs.get(0));
@@ -126,7 +126,7 @@ public class Helpers {
 
     /**
      *
-     *  Digests and MultisigAddress creation
+     *  Digests and Multisig creation
      *
      */
 
@@ -163,10 +163,10 @@ public class Helpers {
      * @param currentUser
      * @return
      */
-    public static ArrayList<MultisigAddress> getMultisigsForUser(ArrayList<ArrayList<Digest>> allDigests, UserObject currentUser) {
+    public static ArrayList<Multisig> getMultisigsForUser(ArrayList<ArrayList<Digest>> allDigests, UserObject currentUser) {
 
         // Generate the first addresses
-        ArrayList<MultisigAddress> multisigs = new ArrayList<MultisigAddress>();
+        ArrayList<Multisig> multisigs = new ArrayList<Multisig>();
 
         // Loop for all digests.
         for (int index = 0; index < allDigests.get(0).size(); index++) {
@@ -183,19 +183,19 @@ public class Helpers {
             }
 
             // Create multisgAddr from digests.
-            MultisigAddress multisigAddress = IotaFlashBridge.composeAddress(alignedDigests);
+            Multisig multisig = IotaFlashBridge.composeAddress(alignedDigests);
 
             // Get digests data for current user.
             Digest digest = allDigests.get(currentUser.getUserIndex()).get(index);
 
-            multisigAddress.setIndex(digest.getIndex());
-            multisigAddress.setSigningIndex(currentUser.getUserIndex() * digest.getSecurity());
-            multisigAddress.setSecuritySum(securitySum);
-            multisigAddress.setSecurity(digest.getSecurity());
+            multisig.setIndex(digest.getIndex());
+            multisig.setSigningIndex(currentUser.getUserIndex() * digest.getSecurity());
+            multisig.setSecuritySum(securitySum);
+            multisig.setSecurity(digest.getSecurity());
 
-            System.out.println("Creating address " + multisigAddress.getAddress() + " index" + multisigAddress.getIndex() + " signingIndex: " + multisigAddress.getSigningIndex());
+            System.out.println("Creating address " + multisig.getAddress() + " index" + multisig.getIndex() + " signingIndex: " + multisig.getSigningIndex());
 
-            multisigs.add(multisigAddress);
+            multisigs.add(multisig);
         }
 
         return multisigs;
@@ -205,22 +205,140 @@ public class Helpers {
     /**
      *
      * @param user
-     * @param multisigAddress
+     * @param multisig
      * @return
      */
-    public static MultisigAddress updateMultisigChildrenForUser(UserObject user, MultisigAddress multisigAddress) {
+    public static Multisig updateMultisigChildrenForUser(UserObject user, Multisig multisig) {
         FlashObject flash = user.getFlash();
-        MultisigAddress originAddress = flash.getRoot().find(multisigAddress.getAddress());
+        Multisig originAddress = flash.getRoot().find(multisig.getAddress());
         if (originAddress != null) {
 
             System.out.println("[INFO]: found address in user" + user.getUserIndex() + " data");
-            originAddress.setChildren(multisigAddress.getChildren());
-            originAddress.setBundles(multisigAddress.getBundles());
-            originAddress.setSecurity(multisigAddress.getSecurity());
+            originAddress.setChildren(multisig.getChildren());
+            originAddress.setBundles(multisig.getBundles());
+            originAddress.setSecurity(multisig.getSecurity());
             return originAddress;
         }
         return null;
     }
 
+    public static void applyTransfers(ArrayList<Bundle> signedBundles, UserObject user) {
+        // Apply transfers to User ONE
+        FlashObject newFlash = IotaFlashBridge.applyTransfersToUser(user, signedBundles);
+
+        // Set new flash object to user
+        user.setFlash(newFlash);
+
+        // Save latest channel bundles
+        user.getBundles().addAll(signedBundles);
+    }
+
+
+    public static void sendTrytes(String[] trytes) {
+        IotaAPI.Builder iota = new IotaAPI.Builder();
+        try {
+            iota.build().sendTrytes(trytes, 5, 10);
+        } catch (ArgumentException exception) {
+            System.out.println("[ERROR]: could not send trytes");
+        }
+
+    }
+
+
+    public static void POWClosedBundle(List<Bundle> bundles) {
+        for (Bundle b : bundles) {
+            String[] trytes = b.toTrytesArray();
+            sendTrytes(trytes);
+        }
+    }
+
+    //static async POWClosedBundle(bundles) {
+//            try {
+//                console.log('attachAndPOWClosedBundle', bundles)
+//                bundles = Attach.getBundles(bundles)
+//                var trytesPerBundle = []
+//                for (var bundle of bundles) {
+//                    var trytes = Attach.bundleToTrytes(bundle)
+//                    trytesPerBundle.push(trytes)
+//                }
+//                console.log('closing room with trytes', trytesPerBundle)
+//                var results = []
+//                for (var trytes of trytesPerBundle) {
+//                    console.log(trytes)
+//                    if (isWindow()) {
+//                        curl.init()
+//                        curl.overrideAttachToTangle(iota)
+//                    }
+//                    var result = await Attach.sendTrytes(trytes)
+//                    results.push(result)
+//                }
+//                return results
+//            } catch (e) {
+//                return e
+//            }
+//        }
+//    export class Attach {
+//        static bundleToTrytes(bundle) {
+//            var bundleTrytes = []
+//            bundle.forEach(function(bundleTx) {
+//                bundleTrytes.push(iota.utils.transactionTrytes(bundleTx))
+//            })
+//            return bundleTrytes.reverse()
+//        }
+//
+//        static async sendTrytes(trytes) {
+//            return new Promise(function(resolve, reject) {
+//      iota.api.sendTrytes(
+//                trytes,
+//                Presets.PROD ? 6 : 5,
+//                Presets.PROD ? 15 : 10,
+//                        (e, r) => {
+//                    console.log('sendTrytes', e, r)
+//                    if (e !== null) {
+//                        reject(e)
+//                    } else {
+//                        resolve(r)
+//                    }
+//                }
+//      )
+//            })
+//        }
+//
+//        static getBundles(bundles) {
+//            var ret = []
+//            for (var bundle of bundles) {
+//                if (bundle !== null || bundle.value !== 0) {
+//                    ret.push(bundle)
+//                }
+//            }
+//            return ret
+//        }
+//
+//        static async POWClosedBundle(bundles) {
+//            try {
+//                console.log('attachAndPOWClosedBundle', bundles)
+//                bundles = Attach.getBundles(bundles)
+//                var trytesPerBundle = []
+//                for (var bundle of bundles) {
+//                    var trytes = Attach.bundleToTrytes(bundle)
+//                    trytesPerBundle.push(trytes)
+//                }
+//                console.log('closing room with trytes', trytesPerBundle)
+//                var results = []
+//                for (var trytes of trytesPerBundle) {
+//                    console.log(trytes)
+//                    if (isWindow()) {
+//                        curl.init()
+//                        curl.overrideAttachToTangle(iota)
+//                    }
+//                    var result = await Attach.sendTrytes(trytes)
+//                    results.push(result)
+//                }
+//                return results
+//            } catch (e) {
+//                return e
+//            }
+//        }
+//    }
 
 }

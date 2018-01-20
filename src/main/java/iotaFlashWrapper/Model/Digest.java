@@ -17,7 +17,6 @@ public class Digest {
     public int getIndex() {
         return index;
     }
-
     public String getDigest() {
         return digest;
     }

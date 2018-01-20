@@ -7,13 +7,10 @@ import iotaFlashWrapper.Model.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static java.nio.file.Files.readAllBytes;
 
 public class IotaFlashBridge {
     private static String iotaLibPath = "iota.flash.js";
@@ -47,7 +44,7 @@ public class IotaFlashBridge {
      * @param digests
      * @return
      */
-    public static MultisigAddress composeAddress(ArrayList<Digest> digests) {
+    public static Multisig composeAddress(ArrayList<Digest> digests) {
         // Create js object for digest
         List<Object> list = new ArrayList<Object>();
         for (Digest digest: digests) {
@@ -66,7 +63,7 @@ public class IotaFlashBridge {
         // Parse result into Java Obj.
         String addr = (String) resultMap.get("address");
         int secSum = (Integer) resultMap.get("securitySum");
-        MultisigAddress ret = new MultisigAddress(addr, secSum);
+        Multisig ret = new Multisig(addr, secSum);
 
         params.release();
         retV8.release();
@@ -101,7 +98,7 @@ public class IotaFlashBridge {
      *
      * @param root
      */
-    public static CreateTransactionHelperObject updateLeafToRoot(MultisigAddress root) {
+    public static CreateTransactionHelperObject updateLeafToRoot(Multisig root) {
         Map<String, Object> map = root.toMap();
         // Create param list
         List<Object> paramsObj = new ArrayList<Object>();
@@ -111,7 +108,7 @@ public class IotaFlashBridge {
         V8Object ret = multisig.executeObjectFunction("updateLeafToRoot", params);
         int generate = ret.getInteger("generate");
         V8Object multisigObject = (V8Object) ret.getObject("multisig");
-        MultisigAddress multisig = V8Converter.multisigAddressFromV8Object(multisigObject);
+        Multisig multisig = V8Converter.multisigAddressFromV8Object(multisigObject);
         return new CreateTransactionHelperObject(generate, multisig);
     }
 
@@ -174,8 +171,8 @@ public class IotaFlashBridge {
     public static ArrayList<Bundle> compose(int balance,
                                             List<Double> deposits,
                                             ArrayList<Bundle> outputs,
-                                            MultisigAddress root,
-                                            MultisigAddress remainderAddress,
+                                            Multisig root,
+                                            Multisig remainderAddress,
                                             ArrayList<Bundle> history,
                                             ArrayList<Transfer> transfers,
                                             boolean close) {
@@ -203,7 +200,7 @@ public class IotaFlashBridge {
      * @param bundles
      * @return
      */
-    public static ArrayList<Signature> sign(MultisigAddress root, String seed, ArrayList<Bundle> bundles) {
+    public static ArrayList<Signature> sign(Multisig root, String seed, ArrayList<Bundle> bundles) {
 
         // Create params.
         // Now put all params into JS ready array.
@@ -256,10 +253,10 @@ public class IotaFlashBridge {
      * @param signedBundles
      * @return
      */
-    public static void applyTransfers(MultisigAddress root,
+    public static void applyTransfers(Multisig root,
                                          ArrayList<Integer> deposits,
                                          ArrayList<Bundle> outputs,
-                                         MultisigAddress remainderAddress,
+                                         Multisig remainderAddress,
                                          ArrayList<Bundle> transfers,
                                          ArrayList<Bundle> signedBundles) {
         // Construct Java params

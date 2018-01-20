@@ -3,7 +3,6 @@ package iotaFlashWrapper.Model;
 import com.eclipsesource.v8.V8;
 import com.eclipsesource.v8.V8Object;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
-import com.sun.org.apache.xpath.internal.operations.Mult;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,35 +10,35 @@ import java.util.List;
 import java.util.Map;
 
 
-public class MultisigAddress {
+public class Multisig {
     private String address;
     private int securitySum;
     private int index;
     private int signingIndex;
     private int security = 2;
-    private ArrayList<MultisigAddress> children;
+    private ArrayList<Multisig> children;
     private ArrayList<Bundle> bundles;
 
-    public MultisigAddress(String address, int securitySum) {
+    public Multisig(String address, int securitySum) {
         this.address = address;
         this.securitySum = securitySum;
-        this.children = new  ArrayList<MultisigAddress>();
+        this.children = new  ArrayList<Multisig>();
         this.bundles = new  ArrayList<Bundle>();
     }
 
-    public MultisigAddress(String address, int securitySum, ArrayList<MultisigAddress> children) {
+    public Multisig(String address, int securitySum, ArrayList<Multisig> children) {
         this.address = address;
         this.securitySum = securitySum;
         this.children = children;
         this.bundles = new  ArrayList<Bundle>();
     }
 
-    public MultisigAddress find(String address) {
+    public Multisig find(String address) {
         if (getAddress().equals(address)) {
             return this;
         } else {
-          for (MultisigAddress mult: getChildren()) {
-              MultisigAddress result = mult.find(address);
+          for (Multisig mult: getChildren()) {
+              Multisig result = mult.find(address);
               if (result != null) {
                   return result;
               }
@@ -48,8 +47,8 @@ public class MultisigAddress {
         return null;
     }
 
-    public MultisigAddress clone() {
-        MultisigAddress output = new MultisigAddress(this.getAddress(), this.getSecuritySum());
+    public Multisig clone() {
+        Multisig output = new Multisig(this.getAddress(), this.getSecuritySum());
 
         output.setSecurity(this.getSecurity());
         output.setIndex(this.getIndex());
@@ -62,19 +61,19 @@ public class MultisigAddress {
         output.setBundles(bundleCopy);
 
         // Copy all children
-        ArrayList<MultisigAddress> childrenCopy = new ArrayList<>();
-        for (MultisigAddress child : this.getChildren()) {
+        ArrayList<Multisig> childrenCopy = new ArrayList<>();
+        for (Multisig child : this.getChildren()) {
             childrenCopy.add(child.clone());
         }
         output.setChildren(childrenCopy);
         return output;
     }
 
-    public void push(MultisigAddress addr) {
+    public void push(Multisig addr) {
         children.add(addr);
     }
 
-    public ArrayList<MultisigAddress> getChildren() {
+    public ArrayList<Multisig> getChildren() {
         return children;
     }
 
@@ -93,7 +92,7 @@ public class MultisigAddress {
         this.address = address;
     }
 
-    public void setChildren(ArrayList<MultisigAddress> children) {
+    public void setChildren(ArrayList<Multisig> children) {
         this.children = children;
     }
 
@@ -137,7 +136,7 @@ public class MultisigAddress {
         map.put("signingIndex", getSigningIndex());
         map.put("security", security);
         List<Object> childrenList = new ArrayList<Object>();
-        for (MultisigAddress ma: children) {
+        for (Multisig ma: children) {
             childrenList.add(ma.toMap());
         }
         map.put("children", childrenList);
@@ -158,7 +157,7 @@ public class MultisigAddress {
     @Override
     public String toString() {
         String out =  "{ \n address':'" + address + "' \n, securitySum:" + securitySum + "\n, signingIndex: " + signingIndex + " \n";
-        for (MultisigAddress addr: children) {
+        for (Multisig addr: children) {
             out += addr.toString();
         }
         return out;

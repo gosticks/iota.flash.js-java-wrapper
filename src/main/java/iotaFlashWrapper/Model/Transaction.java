@@ -3,116 +3,78 @@ package iotaFlashWrapper.Model;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Transaction {
-    private String hash;
-    private String signatureFragments;
-    private String address;
-    private long value;
-    private String obsoleteTag;
-    private long timestamp;
-    private long currentIndex;
-    private long lastIndex;
-    private String bundle;
-    private String trunkTransaction;
-    private String branchTransaction;
-    private String nonce;
-    private Boolean persistence;
-    private long attachmentTimestamp;
-    private String tag;
-    private long attachmentTimestampLowerBound;
-    private long attachmentTimestampUpperBound;
-
+public class Transaction extends jota.model.Transaction {
 
     // Unsigned constructor
-    public Transaction(String address, int value, String obsoleteTag, String tag, Integer timestamp) {
-        this.address = address;
-        this.value = value;
-        this.obsoleteTag = obsoleteTag;
-        this.tag = tag;
-        this.timestamp = timestamp;
+    public Transaction(String address, long value, String obsoleteTag, String tag, long timestamp) {
+        super(address, value, tag, timestamp);
     }
 
     public Transaction(String signatureFragments, Long currentIndex, Long lastIndex, String nonce,
                        String hash, String obsoleteTag, Long timestamp, String trunkTransaction,
                        String branchTransaction, String address, Long value, String bundle, String tag,
                        Long attachmentTimestamp, Long attachmentTimestampLowerBound, Long attachmentTimestampUpperBound) {
-
-        this.hash = hash;
-        this.obsoleteTag = obsoleteTag;
-        this.signatureFragments = signatureFragments;
-        this.address = address;
-        this.value = value;
-        this.timestamp = timestamp;
-        this.currentIndex = currentIndex;
-        this.lastIndex = lastIndex;
-        this.bundle = bundle;
-        this.trunkTransaction = trunkTransaction;
-        this.branchTransaction = branchTransaction;
-        this.tag = tag;
-        this.attachmentTimestamp = attachmentTimestamp;
-        this.attachmentTimestampLowerBound = attachmentTimestampLowerBound;
-        this.attachmentTimestampUpperBound = attachmentTimestampUpperBound;
-        this.nonce = nonce;
-    }
-
-
-    public String getSignatureFragments() {
-        return signatureFragments;
-    }
-
-    public void setSignatureFragments(String signatureFragments) {
-        this.signatureFragments = signatureFragments;
-    }
-
-    public long getValue() {
-        return value;
-    }
-
-    public String getAddress() {
-        return address;
+        super(
+            signatureFragments,
+            currentIndex,
+            lastIndex,
+            nonce,
+            hash,
+            obsoleteTag,
+            timestamp,
+            trunkTransaction,
+            branchTransaction,
+            address,
+            value,
+            bundle,
+            tag,
+            attachmentTimestamp,
+            attachmentTimestampLowerBound,
+            attachmentTimestampUpperBound
+        );
     }
 
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<String, Object>();
-        if (hash != null && !hash.equals("")) {
-            map.put("hash", hash);
+        if (getHash() != null && !getHash().equals("")) {
+            map.put("hash", getHash());
         }
-        map.put("signatureMessageFragment", signatureFragments);
-        map.put("address", address);
-        map.put("value", value);
-        map.put("obsoleteTag", obsoleteTag);
-        map.put("currentIndex", currentIndex);
-        map.put("timestamp", timestamp);
-        map.put("lastIndex", lastIndex);
-        map.put("bundle", bundle);
-        map.put("trunkTransaction", trunkTransaction);
-        map.put("branchTransaction", branchTransaction);
-        map.put("nonce", nonce);
-        map.put("attachmentTimestamp", String.valueOf(attachmentTimestamp));
-        map.put("tag", tag);
-        map.put("attachmentTimestampLowerBound", String.valueOf(attachmentTimestampLowerBound));
-        map.put("attachmentTimestampUpperBound", String.valueOf(attachmentTimestampUpperBound));
+        map.put("signatureMessageFragment", getSignatureFragments());
+        map.put("address", getAddress());
+        map.put("value", getValue());
+        map.put("obsoleteTag", getObsoleteTag());
+        map.put("currentIndex", getCurrentIndex());
+        map.put("timestamp", getTimestamp());
+        map.put("lastIndex", getLastIndex());
+        map.put("bundle", getBundle());
+        map.put("trunkTransaction", getTrunkTransaction());
+        map.put("branchTransaction", getBranchTransaction());
+        map.put("nonce", getNonce());
+        map.put("attachmentTimestamp", String.valueOf(getAttachmentTimestamp()));
+        map.put("tag", getTag());
+        map.put("attachmentTimestampLowerBound", String.valueOf(getAttachmentTimestampLowerBound()));
+        map.put("attachmentTimestampUpperBound", String.valueOf(getAttachmentTimestampUpperBound()));
         return map;
     }
 
     public Transaction clone() {
         return new Transaction(
-            this.signatureFragments,
-            this.currentIndex,
-            this.lastIndex,
-            this.nonce,
-            this.hash,
-            this.obsoleteTag,
-            this.timestamp,
-            this.trunkTransaction,
-            this.branchTransaction,
-            this.address,
-            this.value,
-            this.bundle,
-            this.tag,
-            this.attachmentTimestamp,
-            this.attachmentTimestampLowerBound,
-            this.attachmentTimestampUpperBound
+            this.getSignatureFragments(),
+            this.getCurrentIndex(),
+            this.getLastIndex(),
+            this.getNonce(),
+            this.getHash(),
+            this.getObsoleteTag(),
+            this.getTimestamp(),
+            this.getTrunkTransaction(),
+            this.getBranchTransaction(),
+            this.getAddress(),
+            this.getValue(),
+            this.getBundle(),
+            this.getTag(),
+            this.getAttachmentTimestamp(),
+            this.getAttachmentTimestampLowerBound(),
+            this.getAttachmentTimestampUpperBound()
         );
     }
 
