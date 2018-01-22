@@ -273,15 +273,11 @@ public class Main {
     }
 
     public static double getBalanceOfUser(UserObject user) {
-        double balance = 0.0;
+        double balance = user.getFlash().getDeposits().get(user.getUserIndex());
         Map<String, Integer> transfers = user.getFlash().getOutputs();
-        if (transfers.size() == 0) {
-            return 0.0;
-        }
-
         for (Map.Entry<String, Integer> transfer : transfers.entrySet()) {
             if (transfer.getKey().equals(user.getAddress())) {
-                    balance += transfer.getValue() / 2;
+                    balance += transfer.getValue();
                 }
         }
 
