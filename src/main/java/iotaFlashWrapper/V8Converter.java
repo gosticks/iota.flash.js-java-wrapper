@@ -5,6 +5,7 @@ import com.eclipsesource.v8.V8Array;
 import com.eclipsesource.v8.V8Object;
 import com.eclipsesource.v8.utils.V8ObjectUtils;
 import iotaFlashWrapper.Model.*;
+import jota.model.Transaction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +42,8 @@ public class V8Converter {
     }
 
     public static V8Object flashObjectToV8Object(V8 engine, FlashObject flash) {
-        return V8ObjectUtils.toV8Object(engine, flash.toMap());
+        Map <String, Object> flashMap = flash.toMap();
+        return V8ObjectUtils.toV8Object(engine, flashMap);
     }
 
     public static FlashObject flashObjectFromV8Object(V8Object input) {
@@ -64,18 +66,18 @@ public class V8Converter {
             }
         }
         ArrayList<Bundle> transfers = bundleListFromArrayList((ArrayList<Object>) inputMap.get("transfers"));
-        ArrayList<Bundle> outputs = bundleListFromArrayList((ArrayList<Object>) inputMap.get("outputs"));
+        Map<String, Integer> outputs = (Map<String, Integer>) inputMap.get("outputs");
 
         return new FlashObject(singersCount, balance, settlementAddresses, deposits, outputs, transfers, root, remainderAddress);
     }
 
-    public static V8Array bundleListToV8Array(V8 engine, ArrayList<Bundle> bundles) {
+    public static V8Array bundleListToV8Array(V8 engine, List<Bundle> bundles) {
 
         List<Object> bundleTmp = new ArrayList<Object>();
         for (Bundle b: bundles) {
             List<Object> transactions = new ArrayList<Object>();
             for (jota.model.Transaction tx: b.getTransactions()) {
-                transactions.add(((Transaction) tx).toMap());
+                transactions.add(transactionToMap((Transaction) tx));
             }
             bundleTmp.add(transactions);
         }
@@ -142,7 +144,7 @@ public class V8Converter {
                     continue;
                 } else {
                     for (Object transactionMap: (ArrayList<Object>) bundle) {
-                        b.getWrappedTransactions().add(transactionFromObject(transactionMap));
+                        b.getTransactions().add(transactionFromObject(transactionMap));
                     }
                 }
                 bundles.add(b);
@@ -246,7 +248,7 @@ public class V8Converter {
         return null;
     }
 
-    public static V8Array transferListToV8Array(V8 engine, ArrayList<Transfer> transfers) {
+    public static V8Array transferListToV8Array(V8 engine, List<Transfer> transfers) {
         List<Object> transferObj = new ArrayList<Object>();
         for (Transfer t: transfers) {
             transferObj.add(t.toMap());
@@ -256,12 +258,34 @@ public class V8Converter {
 
     public static V8Array transactionListToV8Array(V8 engine, ArrayList<Transaction> transactions) {
         List<Object> transfersObj = new ArrayList<Object>();
-        for (Transaction t: transactions) {
-            transfersObj.add(t.toMap());
+        for (Transaction tx: transactions) {
+            transfersObj.add(transactionToMap(tx));
         }
         return V8ObjectUtils.toV8Array(engine, transfersObj);
     }
 
+    public static Map<String, Object> transactionToMap(jota.model.Transaction transaction) {
+        Map<String, Object> map = new HashMap<String, Object>();
+        if (transaction.getHash() != null && !transaction.getHash().equals("")) {
+            map.put("hash", transaction.getHash());
+        }
+        map.put("signatureMessageFragment", transaction.getSignatureFragments());
+        map.put("address", transaction.getAddress());
+        map.put("value", transaction.getValue());
+        map.put("obsoleteTag", transaction.getObsoleteTag());
+        map.put("currentIndex", transaction.getCurrentIndex());
+        map.put("timestamp", transaction.getTimestamp());
+        map.put("lastIndex", transaction.getLastIndex());
+        map.put("bundle", transaction.getBundle());
+        map.put("trunkTransaction", transaction.getTrunkTransaction());
+        map.put("branchTransaction", transaction.getBranchTransaction());
+        map.put("nonce", transaction.getNonce());
+        map.put("attachmentTimestamp", String.valueOf(transaction.getAttachmentTimestamp()));
+        map.put("tag", transaction.getTag());
+        map.put("attachmentTimestampLowerBound", String.valueOf(transaction.getAttachmentTimestampLowerBound()));
+        map.put("attachmentTimestampUpperBound", String.valueOf(transaction.getAttachmentTimestampUpperBound()));
+        return map;
+    }
 
     public static Transaction transactionFromObject(Object input) {
         Map<String, Object> bundleData = (Map<String, Object>) input;

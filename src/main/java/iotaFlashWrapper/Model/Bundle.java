@@ -1,33 +1,29 @@
 package iotaFlashWrapper.Model;
 
+import iotaFlashWrapper.Helpers;
+import iotaFlashWrapper.V8Converter;
+import jota.model.Transaction;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class Bundle extends jota.model.Bundle {
-    private List<Transaction> wrappedTransactions = new ArrayList<>();
 
     public Bundle(List<Transaction> transactions) {
-        super((ArrayList<jota.model.Transaction>) (ArrayList<? extends jota.model.Transaction>) transactions, transactions.size());
+        super(transactions, transactions.size());
     }
 
     public Bundle() {
         super();
     }
 
-    public List<Transaction> getWrappedTransactions() {
-        return wrappedTransactions;
-    }
-
-    public void setWrappedTransactions(List<Transaction> wrappedTransactions) {
-        this.wrappedTransactions = wrappedTransactions;
-    }
 
     @Override
     public String toString() {
         String out = "";
-        for (Transaction t: getWrappedTransactions()) {
+        for (Transaction t: getTransactions()) {
             out += t.toString();
             out += "\n";
         }
@@ -38,7 +34,7 @@ public class Bundle extends jota.model.Bundle {
         String[] bundleTrytes = new String[getTransactions().size()];
         List<jota.model.Transaction> transactions = getTransactions();
         for (int i = 0; i < bundleTrytes.length; i++) {
-            bundleTrytes[i] =  transactions.get(i).toTrytes();
+            bundleTrytes[(bundleTrytes.length - 1) - i] =  transactions.get(i).toTrytes();
         }
 
         return bundleTrytes;
@@ -53,16 +49,16 @@ public class Bundle extends jota.model.Bundle {
 
     public List<Object> toArrayList() {
         List<Object> bundleList = new ArrayList<Object>();
-        for (Transaction b: getWrappedTransactions()) {
-            bundleList.add(b.toMap());
+        for (Transaction tx: getTransactions()) {
+            bundleList.add(V8Converter.transactionToMap(tx));
         }
         return bundleList;
     }
 
     public Bundle clone() {
         ArrayList<Transaction> clonedTransactions = new ArrayList<>();
-        for (Transaction t: getWrappedTransactions()) {
-            clonedTransactions.add(t.clone());
+        for (Transaction tx: getTransactions()) {
+            clonedTransactions.add(Helpers.cloneTransaction(tx));
         }
         return new Bundle(clonedTransactions);
     }

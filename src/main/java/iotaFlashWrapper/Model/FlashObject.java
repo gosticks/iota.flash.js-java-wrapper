@@ -1,27 +1,30 @@
 package iotaFlashWrapper.Model;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import com.eclipsesource.v8.utils.V8ObjectUtils;
+
+import java.util.*;
 
 public class FlashObject {
     int signersCount = 2;
     int balance;
-    ArrayList<String> settlementAddresses;
-    ArrayList<Double> deposits;
-    ArrayList<Bundle> outputs = new ArrayList<Bundle>();
-    ArrayList<Bundle> transfers = new ArrayList<Bundle>();
+    List<String> settlementAddresses;
+    List<Double> deposits;
+    Map<String, Integer> outputs = new HashMap<>();
+    List<Bundle> transfers = new ArrayList<Bundle>();
     Multisig root;
     Multisig remainderAddress;
 
 
-    public FlashObject(int signersCount, int balance, ArrayList<Double> deposits) {
+    public FlashObject(int signersCount, int balance, double[] deposits) {
         this.signersCount = signersCount;
         this.balance = balance;
-        this.deposits = deposits;
+        this.deposits = new ArrayList<>();
+        for (double deposit : deposits){
+            this.deposits.add(deposit);
+        }
     }
 
-    public FlashObject(int signersCount, int balance, ArrayList<String> settlementAddresses, ArrayList<Double> deposits, ArrayList<Bundle> outputs, ArrayList<Bundle> transfers, Multisig root, Multisig remainderAddress) {
+    public FlashObject(int signersCount, int balance, List<String> settlementAddresses, List<Double> deposits, Map<String, Integer> outputs, List<Bundle> transfers, Multisig root, Multisig remainderAddress) {
         this.signersCount = signersCount;
         this.balance = balance;
         this.settlementAddresses = settlementAddresses;
@@ -32,35 +35,6 @@ public class FlashObject {
         this.remainderAddress = remainderAddress;
     }
 
-    @Override
-    public String toString() {
-        String out = "";
-        out += "signersCount: " + signersCount + "\n";
-        out += "balance: " + balance + "\n";
-        out += "settlementAddresses: " + "\n";
-        for (String b: settlementAddresses) {
-            out += "\t" + b + "\n";
-        }
-        out += "deposits: " + "\n";
-        for (double b: deposits) {
-            out += "\t" + b + "\n";
-        }
-
-        out += "outputs: " + "\n";
-        for (Bundle b: outputs) {
-            out += "\t" + b.toString() + "\n";
-        }
-
-        out += "transfers: " + "\n";
-        for (Bundle b: transfers) {
-            out += "\t" + b.toString() + "\n";
-        }
-        out += "remainderAddress: " + remainderAddress.toString() + "\n";
-        out += "root: " + root.toString() + "\n";
-
-        return out;
-    }
-
     public Map<String, Object> toMap() {
         Map<String, Object> objectMap = new HashMap<>();
         objectMap.put("signersCount", signersCount);
@@ -69,17 +43,14 @@ public class FlashObject {
         objectMap.put("remainderAddress", remainderAddress.toMap());
         objectMap.put("settlementAddresses", getSettlementAddresses());
 
-        ArrayList<Object> outputMap = new ArrayList<>();
-        for (Bundle b: outputs) {
-            outputMap.add(b.toMap());
-        }
-        objectMap.put("outputs", outputMap);
+        // Wrap outputs inside an array.
+        objectMap.put("outputs", getOutputs());
 
         objectMap.put("deposits", getDeposits());
 
         ArrayList<Object> transfersMap = new ArrayList<>();
-        for (Bundle b: transfers) {
-            outputMap.add(b.toMap());
+        for (Bundle b: getTransfers()) {
+            transfersMap.add(b.toArrayList());
         }
         objectMap.put("transfers", transfersMap);
         return objectMap;
@@ -98,15 +69,15 @@ public class FlashObject {
         return root;
     }
 
-    public ArrayList<Double> getDeposits() {
+    public List<Double> getDeposits() {
         return deposits;
     }
 
-    public ArrayList<Bundle> getOutputs() {
+    public Map<String, Integer> getOutputs() {
         return outputs;
     }
 
-    public ArrayList<Bundle> getTransfers() {
+    public List<Bundle> getTransfers() {
         return transfers;
     }
 
@@ -126,7 +97,7 @@ public class FlashObject {
         this.settlementAddresses = settlementAddresses;
     }
 
-    public ArrayList<String> getSettlementAddresses() {
+    public List<String> getSettlementAddresses() {
         return settlementAddresses;
     }
 }

@@ -57,17 +57,12 @@ public class IotaFlashBridge {
         V8Array params = V8ObjectUtils.toV8Array(engine, paramsList);
 
         V8Object retV8 = multisig.executeObjectFunction("composeAddress", params);
-
-        // Parse return values from JS into Java world.
-        Map<String, ? super Object> resultMap = V8ObjectUtils.toMap(retV8);
-        // Parse result into Java Obj.
-        String addr = (String) resultMap.get("address");
-        int secSum = (Integer) resultMap.get("securitySum");
-        Multisig ret = new Multisig(addr, secSum);
+        // Create multisig.
+        Multisig multisig = V8Converter.multisigAddressFromV8Object(retV8);
 
         params.release();
         retV8.release();
-        return ret;
+        return multisig;
     }
 
     /**
@@ -121,7 +116,7 @@ public class IotaFlashBridge {
      * @param transfers array of all transfers (value, address) pairs
      * @return
      */
-    public static ArrayList<Transfer> prepare(ArrayList<String> settlementAddresses, ArrayList<Double> deposits, int index, ArrayList<Transfer> transfers) {
+    public static ArrayList<Transfer> prepare(List<String> settlementAddresses, List<Double> deposits, int index, List<Transfer> transfers) {
 
         // Now put all params into JS ready array.
         List<Object> params = new ArrayList<>();
@@ -142,7 +137,7 @@ public class IotaFlashBridge {
      * @param deposits
      * @return
      */
-    public static ArrayList<Transfer> close(ArrayList<String> settlementAddresses, ArrayList<Double> deposits) {
+    public static ArrayList<Transfer> close(List<String> settlementAddresses, List<Double> deposits) {
         V8Array saJS = V8ObjectUtils.toV8Array(engine, settlementAddresses);
         // Deposits
         V8Array depositsJS = V8ObjectUtils.toV8Array(engine, deposits);
@@ -170,18 +165,18 @@ public class IotaFlashBridge {
      */
     public static ArrayList<Bundle> compose(int balance,
                                             List<Double> deposits,
-                                            ArrayList<Bundle> outputs,
+                                            Map<String, Integer> outputs,
                                             Multisig root,
                                             Multisig remainderAddress,
-                                            ArrayList<Bundle> history,
-                                            ArrayList<Transfer> transfers,
+                                            List<Bundle> history,
+                                            List<Transfer> transfers,
                                             boolean close) {
         // Create params.
         // Now put all params into JS ready array.
         List<Object> params = new ArrayList<Object>();
         params.add(balance);
         params.add(V8ObjectUtils.toV8Array(engine, deposits));
-        params.add(V8Converter.bundleListToV8Array(engine, outputs));
+        params.add(V8ObjectUtils.toV8Object(engine, outputs));
         params.add(V8Converter.multisigToV8Object(engine, root));
         params.add(V8Converter.multisigToV8Object(engine, remainderAddress));
         params.add(V8Converter.bundleListToV8Array(engine, history));
