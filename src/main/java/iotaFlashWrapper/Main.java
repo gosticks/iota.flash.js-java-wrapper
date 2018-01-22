@@ -1,9 +1,12 @@
 package iotaFlashWrapper;
 
 import iotaFlashWrapper.Model.*;
+import jota.model.Transaction;
 import jota.utils.Checksum;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 
 public class Main {
@@ -15,10 +18,10 @@ public class Main {
         // Run a test based on the flash example
         // Link: https://github.com/iotaledger/iota.flash.js/blob/master/examples/flash.js
 
-        String oneSeed = "GXGIIGUTA9MCRLFMVGLAYBENVGOCWNXRCBQNYGMQKOZRRNSICRPXGONVOUTIMOGLUWSETZSRSYRRSBABR";
-        String oneSettlement = "SFAMPVUSPED9NZIVRDNOVSOLNQ9QHZVHDEWBPTYEJJC9QUMOSUQUQWL9BBENVVEFSCQCVBEXHGPACHRVX";
-        String twoSeed = "GXGIIGUTA9MCRLFMVGLAYBENVGOCWNXRCBQNYGMQKOZRRNSIIIIXGONVUOTIMOGLUWSETZSRSYRRSBABR";
-        String twoSettlement = "9ZPQTA9UPWFW9NHX9SJ9EYPYYGMMZUDZHHYTVHKZHXKBMOCNTDIKRWFVBMFYEUL9IBIALHHNYZWBOEJHA";
+        String oneSeed = "RDNUSLPNOQUGDIZVOINTYRIRRIJMLODOC9ZTQU9KQSCDXPVSBILXUE9AHEOA9MNYZWNSECAVPQ9QSAHCN";
+        String oneSettlement = "EYUSQTMUVAFUGXMJEJYRHVMSCUBDXXKOEPFWPKVJJIY9DDTQJGJRZJTMPZAVBAICZBRGSTBOGCQR9Y9P9";
+        String twoSeed = "IUQDBHFDXK9EHKC9VUHCUXDLICLRANNDHYRMDYFCGSZMROWCZBLBNRKXWBSWZYDMLLHIHMP9ZPOPIFUSW";
+        String twoSettlement = "MNNWUBCDZYZORM9BPRLET9GZOWRXUEPQPVSUDGVXESULXXWIWRLEPLKFAACYSLINHACOVRQISGSTNZNXD";
 
         //////////////////////////////////
         // INITIAL CHANNEL CONDITIONS
@@ -32,15 +35,10 @@ public class Main {
         // Total channel Balance
         int CHANNEL_BALANCE = 200;
         // Users deposits
-        ArrayList<Double> DEPOSITS = new ArrayList<>();
-        DEPOSITS.add(100.0);
-        DEPOSITS.add(100.0);
+        double[] DEPOSITS = new double[]{100.0, 100.0};
         // Setup users.
-        FlashObject oneFlashObj = new FlashObject(SIGNERS_COUNT, CHANNEL_BALANCE, DEPOSITS);
-        UserObject oneFlash = new UserObject(0, oneSeed, TREE_DEPTH, SECURITY, oneSettlement, oneFlashObj);
-
-        FlashObject twoFlashObj = new FlashObject(SIGNERS_COUNT, CHANNEL_BALANCE, DEPOSITS);
-        UserObject twoFlash = new UserObject(1, twoSeed, TREE_DEPTH, SECURITY, twoSettlement, twoFlashObj);
+        UserObject oneFlash = new UserObject(0, oneSeed, TREE_DEPTH, SECURITY, oneSettlement, new FlashObject(SIGNERS_COUNT, CHANNEL_BALANCE, DEPOSITS));
+        UserObject twoFlash = new UserObject(1, twoSeed, TREE_DEPTH, SECURITY, twoSettlement, new FlashObject(SIGNERS_COUNT, CHANNEL_BALANCE, DEPOSITS));
 
         // USER ONE
         ArrayList<Digest> oneDigests = Helpers.getDigestsForUser(oneFlash, TREE_DEPTH);
@@ -128,7 +126,8 @@ public class Main {
 
         System.out.println("[ROOT ADDR]:" + multisgFulladdr);
 
-
+        long rootBalance = Helpers.getBalance(multisgFulladdr);
+        System.out.println("Funds in root address:" + rootBalance);
         /***************************************
          Create transactions.
          ***************************************/
@@ -141,7 +140,7 @@ public class Main {
         ArrayList<Bundle> confirmedTransfers;
 
         // Try to make 10 transfers.
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 3; i++) {
 
             // Create transaction helper and check if we need to add nodes
             CreateTransactionHelperObject helper = Helpers.getTransactionHelper(oneFlash.getFlash().getRoot());
@@ -227,16 +226,14 @@ public class Main {
 
             // Set the updated multisig as origin of the transaction.
             closeHelper.setAddress(multisigOne);
-
-
         }
 
         System.out.println("[INFO] Closing channel...");
 
         // Create transfers.
         ArrayList<Transfer> closeTransfers = new ArrayList<>();
-        closeTransfers.add(new Transfer(oneSettlement, 5));
-        closeTransfers.add(new Transfer(twoSettlement, 5));
+//        closeTransfers.add(new Transfer(oneSettlement, 5));
+//        closeTransfers.add(new Transfer(twoSettlement, 5));
         suggestedTransfer = Helpers.createTransaction(closeTransfers, closeHelper, oneFlash, true);
 
         System.out.println("[INFO] Created transfer suggestion.");
@@ -257,9 +254,13 @@ public class Main {
 
         System.out.println("[INFO] Channel closed!");
 
-        Helpers.POWClosedBundle(signedBundlesTwo);
+        // TODO: find why there is a internal bundle at the start. But only the last one should be used.
+        List<Bundle> closeBundles = new ArrayList<>();
+        closeBundles.add(signedBundlesOne.get(signedBundlesOne.size() - 1));
 
-        // System.out.println("[INFO] Final address:" + Attach signedBundlesOne);
+        List<Bundle> attachedBundles = Helpers.POWClosedBundle(closeBundles);
+
+        System.out.println("[INFO] Attached bundles" + attachedBundles.toString());
     }
 
 
@@ -273,17 +274,15 @@ public class Main {
 
     public static double getBalanceOfUser(UserObject user) {
         double balance = 0.0;
-        ArrayList<Bundle> transfers = user.getBundles();
+        Map<String, Integer> transfers = user.getFlash().getOutputs();
         if (transfers.size() == 0) {
             return 0.0;
         }
 
-        for (Bundle bundle : transfers) {
-            for (Transaction tx : bundle.getWrappedTransactions()) {
-                if (tx.getAddress().equals(user.getAddress())) {
-                    balance += tx.getValue() / 2;
+        for (Map.Entry<String, Integer> transfer : transfers.entrySet()) {
+            if (transfer.getKey().equals(user.getAddress())) {
+                    balance += transfer.getValue() / 2;
                 }
-            }
         }
 
         return balance;
