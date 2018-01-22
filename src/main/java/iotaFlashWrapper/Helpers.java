@@ -1,21 +1,33 @@
 package iotaFlashWrapper;
 
+import com.google.gson.Gson;
 import iotaFlashWrapper.Model.*;
 import jota.IotaAPI;
+import jota.dto.response.GetBalancesResponse;
 import jota.error.ArgumentException;
+import jota.model.Transaction;
 
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Helpers {
-
+    private static boolean useTestnet = true;
+    private static String seedGeneratorURL = "https://seeedy.tangle.works";
+    private static String testNetNodeURL = "https://testnet140.tangle.works:443";
+    private static String netNodeURL = "http://node.iotawallet.info:14265";
+    private static IotaAPI iotaAPI = null;
 
     /**
      * Get a transaction object. The object contains the address to use and if required the number of new addresses to generate
      * @param root multisig address at the top of the tree
      * @return Transaction object with address and number of addresses to create.
-     */
+            */
     public static CreateTransactionHelperObject getTransactionHelper(Multisig root) {
         return IotaFlashBridge.updateLeafToRoot(root);
     }
@@ -45,7 +57,7 @@ public class Helpers {
                     flash.getDeposits(),
                     user.getUserIndex(),
                     transfers
-                    );
+            );
         }
 
         // Compose the transaction. This may also add some management transactions (moving remainder tokens.)
@@ -228,117 +240,120 @@ public class Helpers {
 
         // Set new flash object to user
         user.setFlash(newFlash);
-
-        // Save latest channel bundles
-        user.getBundles().addAll(signedBundles);
     }
 
 
-    public static void sendTrytes(String[] trytes) {
-        IotaAPI.Builder iota = new IotaAPI.Builder();
+    public static List<jota.model.Transaction> sendTrytes(String[] trytes, IotaAPI api) {
+
         try {
-            iota.build().sendTrytes(trytes, 5, 10);
-        } catch (ArgumentException exception) {
-            System.out.println("[ERROR]: could not send trytes");
+            System.out.println("[INFO] Sinding close bundle... This can take some time");
+            List<jota.model.Transaction> txs =  api.sendTrytes(trytes, 5, 10);
+            return txs;
+        } catch (Exception exception) {
+            System.out.println("[ERROR]: could not send trytes " + exception.getLocalizedMessage());
         }
 
+        return new ArrayList<jota.model.Transaction>();
     }
 
 
-    public static void POWClosedBundle(List<Bundle> bundles) {
+    public static List<Bundle> POWClosedBundle(List<Bundle> bundles) {
+        List<Bundle> attachedBundles = new ArrayList<>();
         for (Bundle b : bundles) {
             String[] trytes = b.toTrytesArray();
-            sendTrytes(trytes);
+            attachedBundles.add(new Bundle(sendTrytes(trytes, getIotaAPI())));
+        }
+
+        return attachedBundles;
+    }
+
+
+    public static GeneratedSeed getNewSeed() {
+        try {
+            String seedData = readUrl(seedGeneratorURL);
+            Gson gson = new Gson();
+            GeneratedSeed genSeed = gson.fromJson(seedData, GeneratedSeed.class);
+            return genSeed;
+        } catch (Exception e) {
+            System.out.println("[ERROR]: Failed to get new testned seed" + e.getLocalizedMessage());
+            return null;
         }
     }
 
-    //static async POWClosedBundle(bundles) {
-//            try {
-//                console.log('attachAndPOWClosedBundle', bundles)
-//                bundles = Attach.getBundles(bundles)
-//                var trytesPerBundle = []
-//                for (var bundle of bundles) {
-//                    var trytes = Attach.bundleToTrytes(bundle)
-//                    trytesPerBundle.push(trytes)
-//                }
-//                console.log('closing room with trytes', trytesPerBundle)
-//                var results = []
-//                for (var trytes of trytesPerBundle) {
-//                    console.log(trytes)
-//                    if (isWindow()) {
-//                        curl.init()
-//                        curl.overrideAttachToTangle(iota)
-//                    }
-//                    var result = await Attach.sendTrytes(trytes)
-//                    results.push(result)
-//                }
-//                return results
-//            } catch (e) {
-//                return e
-//            }
-//        }
-//    export class Attach {
-//        static bundleToTrytes(bundle) {
-//            var bundleTrytes = []
-//            bundle.forEach(function(bundleTx) {
-//                bundleTrytes.push(iota.utils.transactionTrytes(bundleTx))
-//            })
-//            return bundleTrytes.reverse()
-//        }
-//
-//        static async sendTrytes(trytes) {
-//            return new Promise(function(resolve, reject) {
-//      iota.api.sendTrytes(
-//                trytes,
-//                Presets.PROD ? 6 : 5,
-//                Presets.PROD ? 15 : 10,
-//                        (e, r) => {
-//                    console.log('sendTrytes', e, r)
-//                    if (e !== null) {
-//                        reject(e)
-//                    } else {
-//                        resolve(r)
-//                    }
-//                }
-//      )
-//            })
-//        }
-//
-//        static getBundles(bundles) {
-//            var ret = []
-//            for (var bundle of bundles) {
-//                if (bundle !== null || bundle.value !== 0) {
-//                    ret.push(bundle)
-//                }
-//            }
-//            return ret
-//        }
-//
-//        static async POWClosedBundle(bundles) {
-//            try {
-//                console.log('attachAndPOWClosedBundle', bundles)
-//                bundles = Attach.getBundles(bundles)
-//                var trytesPerBundle = []
-//                for (var bundle of bundles) {
-//                    var trytes = Attach.bundleToTrytes(bundle)
-//                    trytesPerBundle.push(trytes)
-//                }
-//                console.log('closing room with trytes', trytesPerBundle)
-//                var results = []
-//                for (var trytes of trytesPerBundle) {
-//                    console.log(trytes)
-//                    if (isWindow()) {
-//                        curl.init()
-//                        curl.overrideAttachToTangle(iota)
-//                    }
-//                    var result = await Attach.sendTrytes(trytes)
-//                    results.push(result)
-//                }
-//                return results
-//            } catch (e) {
-//                return e
-//            }
-//        }
-//    }
+    public static long getBalance(String address) {
+        ArrayList<String> addreses = new ArrayList<>();
+        addreses.add(address);
+        IotaAPI api = getIotaAPI();
+        try {
+            GetBalancesResponse resp = api.getBalances(100, addreses);
+            return Long.parseLong(resp.getBalances()[0]);
+        } catch (Exception e) {
+            System.out.println("[ERROR]: could not read balance for account " + address + " with error" + e.getLocalizedMessage());
+            return -1;
+        }
+    }
 
+    private static String readUrl(String urlString) throws Exception {
+        BufferedReader reader = null;
+        try {
+            URL url = new URL(urlString);
+            reader = new BufferedReader(new InputStreamReader(url.openStream()));
+            StringBuffer buffer = new StringBuffer();
+            int read;
+            char[] chars = new char[1024];
+            while ((read = reader.read(chars)) != -1)
+                buffer.append(chars, 0, read);
+
+            return buffer.toString();
+        } finally {
+            if (reader != null)
+                reader.close();
+        }
+    }
+
+    private static IotaAPI getIotaAPI() {
+        if (iotaAPI == null) {
+            URL nodeURL;
+
+            try {
+                if (useTestnet) {
+                    nodeURL = new URL(testNetNodeURL);
+                } else {
+                    nodeURL = new URL(netNodeURL);
+                }
+                iotaAPI = new IotaAPI.Builder()
+                        .protocol(nodeURL.getProtocol())
+                        .host(nodeURL.getHost())
+                        .port(String.valueOf(nodeURL.getPort()))
+                        .build();
+            } catch (Exception e) {
+                System.out.println("[ERROR] Failed to create IotaAPI instance." + e.getLocalizedMessage());
+                return null;
+            }
+
+        }
+        return iotaAPI;
+    }
+
+
+    public static Transaction cloneTransaction(jota.model.Transaction transaction) {
+        return new Transaction(
+                transaction.getSignatureFragments(),
+                transaction.getCurrentIndex(),
+                transaction.getLastIndex(),
+                transaction.getNonce(),
+                transaction.getHash(),
+                transaction.getObsoleteTag(),
+                transaction.getTimestamp(),
+                transaction.getTrunkTransaction(),
+                transaction.getBranchTransaction(),
+                transaction.getAddress(),
+                transaction.getValue(),
+                transaction.getBundle(),
+                transaction.getTag(),
+                transaction.getAttachmentTimestamp(),
+                transaction.getAttachmentTimestampLowerBound(),
+                transaction.getAttachmentTimestampUpperBound()
+        );
+    }
 }
