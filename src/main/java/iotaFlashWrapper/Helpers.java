@@ -18,9 +18,9 @@ import java.util.Map;
 
 public class Helpers {
     private static boolean useTestnet = true;
-    private static String seedGeneratorURL = "https://seeedy.tangle.works";
+    private static String seedGeneratorURL = "http://87.118.96.200:3000"; //"https://seeedy.tangle.works";
     private static String testNetNodeURL = "https://testnet140.tangle.works:443";
-    private static String netNodeURL = "http://node.iotawallet.info:14265";
+    private static String netNodeURL = "http://node.iotawallet.info:14265"; // "http://87.118.96.200:14700";//
     private static IotaAPI iotaAPI = null;
 
     /**
@@ -41,27 +41,22 @@ public class Helpers {
      * @param shouldClose
      * @return
      */
-    public static ArrayList<Bundle> createTransaction(ArrayList<Transfer> transfers, CreateTransactionHelperObject toUse, UserObject user, boolean shouldClose) {
+    public static ArrayList<Bundle> createTransaction(ArrayList<Transfer> transfers, CreateTransactionHelperObject toUse, UserObject user) {
         // System.out.println("Creating a transaction of" + transfers.getValue() + " to " + transfers.getAddress());
         System.out.println("[INFO]: using address "  + toUse.getAddress().getAddress() + ", with boundle count" + toUse.getAddress().getBundles().size());
 
-        ArrayList<Transfer> newTransfers;
+
         FlashObject flash = user.getFlash();
-
-        if (shouldClose) {
-            newTransfers = IotaFlashBridge.close(flash.getSettlementAddresses(), flash.getDeposits());
-        } else {
-            // Prepare a new transaction.
-            newTransfers = IotaFlashBridge.prepare(
-                    flash.getSettlementAddresses(),
-                    flash.getDeposits(),
-                    user.getUserIndex(),
-                    transfers
-            );
-        }
-
+        ArrayList<Bundle> bundles;
+        // Prepare a new transaction.
+        ArrayList<Transfer> newTransfers = IotaFlashBridge.prepare(
+                flash.getSettlementAddresses(),
+                flash.getDeposits(),
+                user.getUserIndex(),
+                transfers
+        );
         // Compose the transaction. This may also add some management transactions (moving remainder tokens.)
-        ArrayList<Bundle> bundles = IotaFlashBridge.compose(
+        bundles = IotaFlashBridge.compose(
                 flash.getBalance(),
                 flash.getDeposits(),
                 flash.getOutputs(),
@@ -69,12 +64,36 @@ public class Helpers {
                 flash.getRemainderAddress(),
                 flash.getTransfers(),
                 newTransfers,
-                shouldClose
+                false
         );
 
         System.out.println("[SUCCESS] Created signatures for user" + user.getUserIndex());
         // Apply the signature of the transaction creater to the current transactions bundle.
         ArrayList<Signature> signatures = IotaFlashBridge.sign(toUse.getAddress(), user.getSeed(), bundles);
+
+        System.out.println("[SUCCESS] Parial applied Signature for user" +  user.getUserIndex() + " on transfer bundle");
+        // Sign bundle with your USER ONE'S signatures
+        return IotaFlashBridge.appliedSignatures(bundles, signatures);
+    }
+
+    public static ArrayList<Bundle> closeChannel(UserObject user) {
+        FlashObject flash = user.getFlash();
+        ArrayList<Transfer> closeTransfers = IotaFlashBridge.close(flash.getSettlementAddresses(), flash.getDeposits());
+        // Compose the transaction. This may also add some management transactions (moving remainder tokens.)
+        ArrayList<Bundle> bundles = IotaFlashBridge.compose(
+                flash.getBalance(),
+                flash.getDeposits(),
+                flash.getOutputs(),
+                flash.getRoot(),
+                flash.getRemainderAddress(),
+                flash.getTransfers(),
+                closeTransfers,
+                true
+        );
+
+        System.out.println("[SUCCESS] Created signatures for user" + user.getUserIndex());
+        // Apply the signature of the transaction creater to the current transactions bundle.
+        ArrayList<Signature> signatures = IotaFlashBridge.sign(flash.getRoot(), user.getSeed(), bundles);
 
         System.out.println("[SUCCESS] Parial applied Signature for user" +  user.getUserIndex() + " on transfer bundle");
         // Sign bundle with your USER ONE'S signatures
@@ -234,6 +253,11 @@ public class Helpers {
         return null;
     }
 
+    /**
+     * Apply transfers to a user flash state.
+     * @param signedBundles
+     * @param user
+     */
     public static void applyTransfers(ArrayList<Bundle> signedBundles, UserObject user) {
         // Apply transfers to User ONE
         FlashObject newFlash = IotaFlashBridge.applyTransfersToUser(user, signedBundles);
@@ -242,13 +266,20 @@ public class Helpers {
         user.setFlash(newFlash);
     }
 
-
-    public static List<jota.model.Transaction> sendTrytes(String[] trytes, IotaAPI api) {
+    /**
+     * Send trytes array to the node specified in the IotaAPI setup.
+     * @param trytes
+     * @param api
+     * @return returns the transactions applied to the node tangle.
+     */
+    public static List<jota.model.Transaction> sendTrytes(String[] trytes, IotaAPI api, int depth, int minWeightMagnitude) {
 
         try {
             System.out.println("[INFO] Sinding close bundle... This can take some time");
-            List<jota.model.Transaction> txs =  api.sendTrytes(trytes, 5, 10);
+            List<jota.model.Transaction> txs = api.sendTrytes(trytes, depth, minWeightMagnitude);
             return txs;
+        } catch (IllegalAccessError error) {
+            System.out.println("[ERROR] " + error.getLocalizedMessage());
         } catch (Exception exception) {
             System.out.println("[ERROR]: could not send trytes " + exception.getLocalizedMessage());
         }
@@ -257,17 +288,70 @@ public class Helpers {
     }
 
 
-    public static List<Bundle> POWClosedBundle(List<Bundle> bundles) {
+    public static List<Bundle> POWClosedBundle(List<Bundle> bundles, int depth, int minWeightMagnitude) {
         List<Bundle> attachedBundles = new ArrayList<>();
         for (Bundle b : bundles) {
             String[] trytes = b.toTrytesArray();
-            attachedBundles.add(new Bundle(sendTrytes(trytes, getIotaAPI())));
+            List<jota.model.Transaction> txs = sendTrytes(trytes, getIotaAPI(), depth, minWeightMagnitude);
+            if (txs != null && txs.size() > 0) {
+                Bundle bundle = new Bundle(txs);
+                attachedBundles.add(bundle);
+            }
         }
 
         return attachedBundles;
     }
 
 
+    /**
+     * creates a new iota instace with the defined url and mode (testnet or not)
+     * if api instance available the just return it
+     * @return IotaAPI instance with setup url
+     */
+    public static IotaAPI getIotaAPI() {
+        if (iotaAPI == null) {
+            return getNewIotaAPI();
+        }
+        return iotaAPI;
+    }
+
+    /**
+     * Creates a new instance of iota api and override the currently set one.
+     * Can be used to change url settings.
+     * @return IotaAPI instance with setup url
+     */
+    public static IotaAPI getNewIotaAPI() {
+        URL nodeURL;
+
+        try {
+            if (useTestnet) {
+                nodeURL = new URL(testNetNodeURL);
+            } else {
+                nodeURL = new URL(netNodeURL);
+            }
+            iotaAPI = new IotaAPI.Builder()
+                    .protocol(nodeURL.getProtocol())
+                    .host(nodeURL.getHost())
+                    .port(String.valueOf(nodeURL.getPort()))
+                    .build();
+        } catch (Exception e) {
+            System.out.println("[ERROR] Failed to create IotaAPI instance." + e.getLocalizedMessage());
+            return null;
+        }
+
+        return iotaAPI;
+    }
+
+
+    /**
+     *
+     * Utilities
+     */
+
+    /**
+     * gives a new funded seed from a seedGeneratorURL
+     * @return
+     */
     public static GeneratedSeed getNewSeed() {
         try {
             String seedData = readUrl(seedGeneratorURL);
@@ -280,6 +364,41 @@ public class Helpers {
         }
     }
 
+    /**
+     * Get the total left in the flash channel.
+     * @param user
+     * @return
+     */
+    public static double getFlashDeposits(UserObject user) {
+        double sum = 0;
+        for (double deposit : user.getFlash().getDeposits()) {
+            sum += deposit;
+        }
+        return sum;
+    }
+
+    /**
+     * get current output of the flash channel. All transactions and remainder.
+     * @param user UserObject for which to compute amount
+     * @return amount of IOTA
+     */
+    public static double getBalanceOfUser(UserObject user) {
+        double balance = user.getFlash().getDeposits().get(user.getUserIndex());
+        Map<String, Integer> transfers = user.getFlash().getOutputs();
+        for (Map.Entry<String, Integer> transfer : transfers.entrySet()) {
+            if (transfer.getKey().equals(user.getAddress())) {
+                balance += transfer.getValue();
+            }
+        }
+
+        return balance;
+    }
+
+    /**
+     * Returns the amount of iota deposited in a selected address
+     * @param address
+     * @return
+     */
     public static long getBalance(String address) {
         ArrayList<String> addreses = new ArrayList<>();
         addreses.add(address);
@@ -288,11 +407,17 @@ public class Helpers {
             GetBalancesResponse resp = api.getBalances(100, addreses);
             return Long.parseLong(resp.getBalances()[0]);
         } catch (Exception e) {
-            System.out.println("[ERROR]: could not read balance for account " + address + " with error" + e.getLocalizedMessage());
+            System.out.println("[ERROR]: could not read balance for account " + address + " with error " + e.getLocalizedMessage());
             return -1;
         }
     }
 
+    /**
+     * Utility for reading date from a provided url string.
+     * @param urlString
+     * @return
+     * @throws Exception
+     */
     private static String readUrl(String urlString) throws Exception {
         BufferedReader reader = null;
         try {
@@ -310,31 +435,6 @@ public class Helpers {
                 reader.close();
         }
     }
-
-    private static IotaAPI getIotaAPI() {
-        if (iotaAPI == null) {
-            URL nodeURL;
-
-            try {
-                if (useTestnet) {
-                    nodeURL = new URL(testNetNodeURL);
-                } else {
-                    nodeURL = new URL(netNodeURL);
-                }
-                iotaAPI = new IotaAPI.Builder()
-                        .protocol(nodeURL.getProtocol())
-                        .host(nodeURL.getHost())
-                        .port(String.valueOf(nodeURL.getPort()))
-                        .build();
-            } catch (Exception e) {
-                System.out.println("[ERROR] Failed to create IotaAPI instance." + e.getLocalizedMessage());
-                return null;
-            }
-
-        }
-        return iotaAPI;
-    }
-
 
     public static Transaction cloneTransaction(jota.model.Transaction transaction) {
         return new Transaction(

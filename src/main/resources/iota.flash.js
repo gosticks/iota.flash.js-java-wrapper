@@ -10374,6 +10374,7 @@ function getMultisigs(root, transfers) {
     node = node.children[node.children.length - 1];
   }
   if(node.address != firstTransfer.address) {
+  	console.log(firstTransfer.address)
     throw new Error(TransferErrors.ADDRESS_NOT_FOUND);
   }
   let multisigs = [];

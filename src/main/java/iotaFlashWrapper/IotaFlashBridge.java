@@ -181,7 +181,7 @@ public class IotaFlashBridge {
         params.add(V8Converter.multisigToV8Object(engine, remainderAddress));
         params.add(V8Converter.bundleListToV8Array(engine, history));
         params.add(V8Converter.transferListToV8Array(engine, transfers));
-
+        params.add(close);
         // Call js function.
         V8Array ret = transfer.executeArrayFunction("compose", V8ObjectUtils.toV8Array(engine, params));
 

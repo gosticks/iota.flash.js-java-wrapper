@@ -1,6 +1,8 @@
 package iotaFlashWrapper;
 
+import com.sun.xml.internal.ws.api.message.HeaderList;
 import iotaFlashWrapper.Model.*;
+import jota.IotaAPI;
 import jota.model.Transaction;
 import jota.utils.Checksum;
 
@@ -53,8 +55,6 @@ public class Main {
         ArrayList<ArrayList<Digest>> allUserDigests = new ArrayList<>();
         allUserDigests.add(oneDigests);
         allUserDigests.add(twoDigests);
-
-
 
         /***************************************
             User one setup.
@@ -128,6 +128,10 @@ public class Main {
 
         long rootBalance = Helpers.getBalance(multisgFulladdr);
         System.out.println("Funds in root address:" + rootBalance);
+
+        IotaAPI api =  Helpers.getIotaAPI();
+        // api.sendTransfer();
+
         /***************************************
          Create transactions.
          ***************************************/
@@ -140,7 +144,7 @@ public class Main {
         ArrayList<Bundle> confirmedTransfers;
 
         // Try to make 10 transfers.
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 4; i++) {
 
             // Create transaction helper and check if we need to add nodes
             CreateTransactionHelperObject helper = Helpers.getTransactionHelper(oneFlash.getFlash().getRoot());
@@ -173,7 +177,7 @@ public class Main {
             transfers.add(new Transfer(twoSettlement, 10));
 
             // Create a transaction from a transfer.
-            suggestedTransfer = Helpers.createTransaction(transfers, helper, oneFlash, false);
+            suggestedTransfer = Helpers.createTransaction(transfers, helper, oneFlash);
 
             System.out.println("[INFO] Created transfer suggestion.");
 
@@ -191,10 +195,10 @@ public class Main {
             Helpers.applyTransfers(signedBundlesOne, oneFlash);
             Helpers.applyTransfers(signedBundlesTwo, twoFlash);
 
-            System.out.println("Transaction Applied! Transactable tokens: " + getFlashDeposits(oneFlash));
+            System.out.println("Transaction Applied! Transactable tokens: " + Helpers.getFlashDeposits(oneFlash));
 
-            double oneBalance = getBalanceOfUser(oneFlash);
-            double twoBalance = getBalanceOfUser(twoFlash);
+            double oneBalance = Helpers.getBalanceOfUser(oneFlash);
+            double twoBalance = Helpers.getBalanceOfUser(twoFlash);
 
             System.out.println("Deposits");
             System.out.println("User one:" + oneBalance + ", deposits: " + oneFlash.getFlash().getDeposits() );
@@ -230,11 +234,7 @@ public class Main {
 
         System.out.println("[INFO] Closing channel...");
 
-        // Create transfers.
-        ArrayList<Transfer> closeTransfers = new ArrayList<>();
-//        closeTransfers.add(new Transfer(oneSettlement, 5));
-//        closeTransfers.add(new Transfer(twoSettlement, 5));
-        suggestedTransfer = Helpers.createTransaction(closeTransfers, closeHelper, oneFlash, true);
+        suggestedTransfer = Helpers.closeChannel(oneFlash);
 
         System.out.println("[INFO] Created transfer suggestion.");
 
@@ -258,29 +258,8 @@ public class Main {
         List<Bundle> closeBundles = new ArrayList<>();
         closeBundles.add(signedBundlesOne.get(signedBundlesOne.size() - 1));
 
-        List<Bundle> attachedBundles = Helpers.POWClosedBundle(closeBundles);
+        List<Bundle> attachedBundles = Helpers.POWClosedBundle(signedBundlesOne, 5, 10);
 
         System.out.println("[INFO] Attached bundles" + attachedBundles.toString());
-    }
-
-
-    public static double getFlashDeposits(UserObject user) {
-        double sum = 0;
-        for (double deposit : user.getFlash().getDeposits()) {
-            sum += deposit;
-        }
-        return sum;
-    }
-
-    public static double getBalanceOfUser(UserObject user) {
-        double balance = user.getFlash().getDeposits().get(user.getUserIndex());
-        Map<String, Integer> transfers = user.getFlash().getOutputs();
-        for (Map.Entry<String, Integer> transfer : transfers.entrySet()) {
-            if (transfer.getKey().equals(user.getAddress())) {
-                    balance += transfer.getValue();
-                }
-        }
-
-        return balance;
     }
 }
