@@ -30,17 +30,15 @@ public class Main {
 
         // Security level
         int SECURITY = 1;
-        // Number of parties taking signing part in the channel
-        int SIGNERS_COUNT = 2;
         // Flash tree depth
         int TREE_DEPTH = 4;
-        // Total channel Balance
-        int CHANNEL_BALANCE = 200;
         // Users deposits
         double[] DEPOSITS = new double[]{100.0, 100.0};
         // Setup users.
-        UserObject oneFlash = new UserObject(0, oneSeed, TREE_DEPTH, SECURITY, oneSettlement, new FlashObject(SIGNERS_COUNT, CHANNEL_BALANCE, DEPOSITS));
-        UserObject twoFlash = new UserObject(1, twoSeed, TREE_DEPTH, SECURITY, twoSettlement, new FlashObject(SIGNERS_COUNT, CHANNEL_BALANCE, DEPOSITS));
+        UserObject oneFlash = new UserObject(0, oneSeed, 0, SECURITY);
+        oneFlash.setFlash(new FlashObject(DEPOSITS, TREE_DEPTH, SECURITY));
+        UserObject twoFlash = new UserObject(1, twoSeed, 0, SECURITY);
+        twoFlash.setFlash(new FlashObject(DEPOSITS, TREE_DEPTH, SECURITY));
 
         // USER ONE
         ArrayList<Digest> oneDigests = Helpers.getDigestsForUser(oneFlash, TREE_DEPTH);
@@ -111,8 +109,8 @@ public class Main {
         twoFlash.getFlash().setSettlementAddresses(settlementAddresses);
 
         // Set digest/key index
-        oneFlash.setIndex(oneDigests.size());
-        twoFlash.setIndex(twoDigests.size());
+        oneFlash.setSeedIndex(oneDigests.size());
+        twoFlash.setSeedIndex(twoDigests.size());
 
         System.out.println("Channel Setup completed!");
 
@@ -144,7 +142,7 @@ public class Main {
         ArrayList<Bundle> confirmedTransfers;
 
         // Try to make 10 transfers.
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 6; i++) {
 
             // Create transaction helper and check if we need to add nodes
             CreateTransactionHelperObject helper = Helpers.getTransactionHelper(oneFlash.getFlash().getRoot());

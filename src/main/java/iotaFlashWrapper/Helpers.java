@@ -119,9 +119,9 @@ public class Helpers {
     public static ArrayList<Digest> getNewBranchDigests(UserObject user, int toGenerate) {
         ArrayList<Digest> digests = new ArrayList<>();
         for (int i = 0; i < toGenerate; i++) {
-            Digest digest = IotaFlashBridge.getDigest(user.getSeed(), user.getIndex(), user.getSecurity());
-            System.out.println("USING index for digest: " + user.getIndex() );
-            user.incrementIndex();
+            Digest digest = IotaFlashBridge.getDigest(user.getSeed(), user.getSeedIndex(), user.getSecurity());
+            System.out.println("USING index for digest: " + user.getSeedIndex() );
+            user.incrementSeedIndex();
             digests.add(digest);
         }
         return digests;
@@ -179,10 +179,10 @@ public class Helpers {
             // Create new digest
             Digest digest = IotaFlashBridge.getDigest(
                     user.getSeed(),
-                    user.getIndex(),
+                    user.getSeedIndex(),
                     user.getSecurity()
             );
-            user.incrementIndex();
+            user.incrementSeedIndex();
             System.out.println("Adding digest (" + digest.toString() + ") to user " + user.getUserIndex());
             // Increment key index
 
@@ -386,10 +386,12 @@ public class Helpers {
      * @return amount of IOTA
      */
     public static double getBalanceOfUser(UserObject user) {
-        double balance = user.getFlash().getDeposits().get(user.getUserIndex());
-        Map<String, Integer> transfers = user.getFlash().getOutputs();
+        FlashObject flash = user.getFlash();
+        double balance = flash.getDeposits().get(user.getUserIndex());
+        Map<String, Integer> transfers = flash.getOutputs();
         for (Map.Entry<String, Integer> transfer : transfers.entrySet()) {
-            if (transfer.getKey().equals(user.getAddress())) {
+            String userSettlementAddr = flash.getSettlementAddresses().get(user.getUserIndex());
+            if (transfer.getKey().equals(userSettlementAddr)) {
                 balance += transfer.getValue();
             }
         }

@@ -67,8 +67,9 @@ public class V8Converter {
         }
         ArrayList<Bundle> transfers = bundleListFromArrayList((ArrayList<Object>) inputMap.get("transfers"));
         Map<String, Integer> outputs = (Map<String, Integer>) inputMap.get("outputs");
-
-        return new FlashObject(singersCount, balance, settlementAddresses, deposits, outputs, transfers, root, remainderAddress);
+        Integer depth = (Integer) inputMap.get("depth");
+        Integer security = (Integer) inputMap.get("security");
+        return new FlashObject(singersCount, balance, settlementAddresses, deposits, outputs, transfers, root, remainderAddress, depth ,security);
     }
 
     public static V8Array bundleListToV8Array(V8 engine, List<Bundle> bundles) {
