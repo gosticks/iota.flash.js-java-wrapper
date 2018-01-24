@@ -38,7 +38,6 @@ public class Helpers {
      * @param transfers
      * @param toUse Transaction helper object
      * @param user
-     * @param shouldClose
      * @return
      */
     public static ArrayList<Bundle> createTransaction(ArrayList<Transfer> transfers, CreateTransactionHelperObject toUse, UserObject user) {
@@ -55,6 +54,11 @@ public class Helpers {
                 user.getUserIndex(),
                 transfers
         );
+
+        if (newTransfers == null) {
+            return new ArrayList<>();
+        }
+
         // Compose the transaction. This may also add some management transactions (moving remainder tokens.)
         bundles = IotaFlashBridge.compose(
                 flash.getBalance(),
@@ -301,7 +305,6 @@ public class Helpers {
 
         return attachedBundles;
     }
-
 
     /**
      * creates a new iota instace with the defined url and mode (testnet or not)

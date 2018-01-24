@@ -126,8 +126,14 @@ public class IotaFlashBridge {
         params.add(V8Converter.transferListToV8Array(engine, transfers));
 
         // Call js function.
-        V8Array ret = transfer.executeArrayFunction("prepare", V8ObjectUtils.toV8Array(engine, params));
-        return V8Converter.transferListFromV8Array(ret);
+        try {
+            V8Array ret = transfer.executeArrayFunction("prepare", V8ObjectUtils.toV8Array(engine, params));
+            return V8Converter.transferListFromV8Array(ret);
+        } catch (V8ScriptExecutionException exception) {
+
+            return null;
+        }
+
     }
 
 

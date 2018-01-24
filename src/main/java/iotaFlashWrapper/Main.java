@@ -144,7 +144,7 @@ public class Main {
         ArrayList<Bundle> confirmedTransfers;
 
         // Try to make 10 transfers.
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 2; i++) {
 
             // Create transaction helper and check if we need to add nodes
             CreateTransactionHelperObject helper = Helpers.getTransactionHelper(oneFlash.getFlash().getRoot());
@@ -252,13 +252,7 @@ public class Main {
         Helpers.applyTransfers(signedBundlesOne, oneFlash);
         Helpers.applyTransfers(signedBundlesTwo, twoFlash);
 
-        System.out.println("[INFO] Channel closed!");
-
-        // TODO: find why there is a internal bundle at the start. But only the last one should be used.
-        List<Bundle> closeBundles = new ArrayList<>();
-        closeBundles.add(signedBundlesOne.get(signedBundlesOne.size() - 1));
-
-        List<Bundle> attachedBundles = Helpers.POWClosedBundle(signedBundlesOne, 5, 10);
+        List<Bundle> attachedBundles = Helpers.POWClosedBundle(signedBundlesOne, 4, 13);
 
         System.out.println("[INFO] Attached bundles" + attachedBundles.toString());
     }
